@@ -21,14 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
+This project contains code derived from:
+unbaswastaken's gorillalocomotion-VR-MINECRAFT
+https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT
 
-This project is released under the MIT License.
+Original GorillaLocomotion system:
+Another Axiom
+https://github.com/Another-Axiom/GorillaLocomotion
 
-This project is based on work from:
-- unbaswastaken's gorillalocomotion-VR-MINECRAFT:
-  https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT
-
-- Another Axiom's GorillaLocomotion:
-  https://github.com/Another-Axiom/GorillaLocomotion
-
-Original projects are licensed under their respective licenses.
+Their respective licenses apply to their original work.
