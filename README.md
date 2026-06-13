@@ -153,7 +153,7 @@ server that hasn't allowed it.
 ./gradlew build      # client mod  ->  build/libs/
 ```
 
-The server companion lives in its own project (`ViveMonke(Quest)Craft-ServerBuild`)
+The server companion lives in its own project (`ViveMonkeCraft-ServerBuild`)
 and builds the same way.
 
 ---
