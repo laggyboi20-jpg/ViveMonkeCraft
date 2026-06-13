@@ -30,7 +30,7 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
   don't double-move.
 - **Throw / jump** — let go while swinging fast and you launch, scaled by *jump power*
   and hard-capped so a tracking glitch can't rocket you.
-- **Reach extension** — "gorilla arms" let you touch the ground from standing height
+- **Long Arms** — "Long arms" let you touch the ground from standing height
   without physically reaching; your real swing is still measured 1:1 so movement
   never feels twitchy.
 - **Climbing & wall behaviour** — cling and climb walls, or set them to slide; a
