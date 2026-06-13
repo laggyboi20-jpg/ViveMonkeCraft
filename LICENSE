@@ -21,12 +21,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
-This project contains code derived from:
-unbaswastaken's gorillalocomotion-VR-MINECRAFT
-https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT
 
-Original GorillaLocomotion system:
-Another Axiom
-https://github.com/Another-Axiom/GorillaLocomotion
+## Third Party Licenses
 
-Their respective licenses apply to their original work.
+This project includes code or assets derived from other open-source projects.
+Their original licenses are included in the Third Party Licenses folder.
+
+- Another Axiom - GorillaLocomotion
+- unbaswastaken - gorillalocomotion-VR-MINECRAFT
