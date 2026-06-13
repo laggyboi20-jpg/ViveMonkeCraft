@@ -165,9 +165,9 @@ MIT — see [LICENSE](LICENSE).
 *Not affiliated with Another Axiom or Gorilla Tag. "Gorilla Tag" is referenced only to
 describe the movement style.*
 
-# Credits for the code that is open sourced and the idea overall under MIT license
-- Kerestell Smith https://github.com/Another-Axiom/GorillaLocomotion
-- unbaswastaken https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT
-- Vivecraft team https://github.com/Vivecraft/VivecraftMod
+# Credits for the code that is open sourced and the idea MIT And  LGPLv3 License
+- Kerestell Smith https://github.com/Another-Axiom/GorillaLocomotion MIT
+- unbaswastaken https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT MIT
+- Vivecraft team https://github.com/Vivecraft/VivecraftMod LGPLv3
 - LaggyBoi
 - Claude Code
