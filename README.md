@@ -1,4 +1,4 @@
-# ViveMonke(Quest)Craft
+# ViveMonkeCraft
 
 **Gorilla Tag–style VR locomotion for Minecraft 1.21.4.** Grab the world with your
 hands and swing, climb, and fling yourself through it — no joystick required.
