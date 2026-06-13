@@ -52,7 +52,7 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
 - Ice is slippery on **every** face — push off ice walls for momentum, but you can't
   cling or climb them.
 - Tunable ice speed multiplier kept low for Quest performance.
-- **Experimental:** make ice *floors* behave like ice *walls* (pure push-off, no glue).
+- **Experimental:** make ice *floors* behave like ice *walls* (pure push-off, no glue) leave feedback somewhere which one is better default or this one.
 
 ## Gorilla body ("Real Monke" & Monke Model)
 
