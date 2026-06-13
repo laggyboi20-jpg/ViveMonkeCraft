@@ -1,2 +1,2 @@
-# ViveMonkeQuestCraft
-Its an mod to ViveCraft That allows gorilla tag inspired movement in Vivecraft
+# ViveMonkeCraft
+ViveMonkeCraft Gorilla Tag–style hand-swing locomotion for Minecraft VR (Vivecraft / QuestCraft).
