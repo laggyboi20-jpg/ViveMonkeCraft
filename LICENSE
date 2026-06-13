@@ -22,7 +22,13 @@ SOFTWARE.
 
 ---
 
-also releasd under MIT license Both of these
-This Project is based on unbaswastaken project that was based on gorilla tag Locomotion systems by another axiom
-https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT
-https://github.com/Another-Axiom/GorillaLocomotion
+This project is released under the MIT License.
+
+This project is based on work from:
+- unbaswastaken's gorillalocomotion-VR-MINECRAFT:
+  https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT
+
+- Another Axiom's GorillaLocomotion:
+  https://github.com/Another-Axiom/GorillaLocomotion
+
+Original projects are licensed under their respective licenses.
