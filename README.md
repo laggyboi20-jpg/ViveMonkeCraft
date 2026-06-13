@@ -109,7 +109,7 @@ Movement, GT-Physics, Reach & Body, Jump & Gravity, and Visual pages. Changes ap
 live. Everything is also editable in `config/vivemonkecraft.properties`.
 
 **Presets:** *Tutorial* (easiest to move), *Default*, *Long Arms*, *Zero Gravity*,
-*Speed Run* — and a *Gorilla Tag Feel* setup for the authentic experience.
+*Speed Run*.
 
 ---
 
