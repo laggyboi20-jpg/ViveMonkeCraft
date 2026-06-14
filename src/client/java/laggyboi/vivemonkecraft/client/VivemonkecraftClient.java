@@ -32,6 +32,10 @@ public class VivemonkecraftClient implements ClientModInitializer {
     // Reset to false on disconnect so we auto-start again next time a world loads.
     private boolean autoStarted = false;
 
+    // VR-active state last tick — used to edge-trigger auto enable/disable so the mod
+    // turns on when a headset appears and off when it goes away.
+    private boolean vrWasActive = false;
+
     // Ticks to wait after joining before auto-enabling the mod.
     // This gives the server's config packet time to arrive so we know whether the
     // server runs the companion mod (monke-server) BEFORE we decide.
@@ -206,6 +210,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
             wasInGui          = false;
             lastDimension     = null;
             wallSlideSent     = false;   // next world starts with no pending grip state
+            vrWasActive       = false;   // re-evaluate VR presence fresh next world
             MonkeModelClientSet.clear(); // stale legless flags don't carry over
             ServerLimits.reset();   // clear caps + authorization for the next world
             if (enabled) {
@@ -308,9 +313,9 @@ public class VivemonkecraftClient implements ClientModInitializer {
             ticksSinceJoin++;
             if (ticksSinceJoin >= PACKET_WAIT_TICKS) {
                 autoStarted = true;
-                if (serverAuthorized(client)) {
-                    applyEnabled(true);   // applyEnabled also checks ServerLimits.modEnabled
-                } else if (!warnedNoServerMod) {
+                // Actually enabling is handled by the VR watcher below (it requires a
+                // headset). Here we only warn once if the server hasn't opted in.
+                if (!serverAuthorized(client) && !warnedNoServerMod) {
                     warnedNoServerMod = true;
                     client.player.displayClientMessage(Component.literal(
                         "§e[ViveMonkeCraft] §cThis server doesn't run the monke-server "
@@ -320,6 +325,27 @@ public class VivemonkecraftClient implements ClientModInitializer {
                 }
             }
         }
+
+        // VR PRESENCE DRIVES THE MOD: auto-ON when a headset becomes active (and the
+        // server allows it), auto-OFF when VR goes away — so it's inert in plain desktop
+        // Minecraft and springs to life in VR. Edge-triggered (acts only on the VR
+        // on/off transition), so you can still manually toggle it off within a VR
+        // session without it snapping back on every tick.
+        boolean vrActive = VivecraftBridge.isVrActive();
+        if (autoStarted && client.player != null) {
+            if (vrActive && !vrWasActive) {
+                if (!enabled && serverAuthorized(client) && ServerLimits.modEnabled) applyEnabled(true);
+            } else if (!vrActive && vrWasActive) {
+                if (enabled) applyEnabled(false);
+            }
+            vrWasActive = vrActive;
+        }
+
+        // While the mod is on, disable Vivecraft's teleport (a free-locomotion mod
+        // doesn't use it, and the teleport button desyncs the room origin and breaks
+        // our physics). Restored automatically when the mod turns off. Enforced every
+        // tick so it survives Vivecraft re-initialising on respawn/dimension change.
+        VivecraftBridge.setTeleportDisabled(enabled);
 
         // Toggle on each press of the keybind (keyboard or Vivecraft radial menu).
         while (toggleKey.consumeClick()) {
