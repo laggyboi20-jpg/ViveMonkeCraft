@@ -305,6 +305,40 @@ public class ModMenuIntegration implements ModMenuApi {
             .setTooltip(Component.literal("Extra head rotation in degrees (added on top of look direction)."))
             .setSaveConsumer(v -> MovementConfig.modelHeadPitch = v).build());
 
+        //Block_interactions page
+        ConfigCategory BlockInteractions = builder.getOrCreateCategory(Component.literal("BlockInteractions"));
+
+        BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Punch mining (experimental)"), MovementConfig.punchMining)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("Break the block your hand touches — but only while holding the"),
+                        Component.literal("tool MEANT for it (pickaxe on stone, etc.) AND only when you PUNCH it"),
+                        Component.literal("(hand speed into the block). Gentle grabs never mine, so climbing"),
+                        Component.literal("with the tool in hand stays safe. Off by default."))
+                .setSaveConsumer(v -> MovementConfig.punchMining = v).build());
+
+        BlockInteractions.addEntry(eb.startDoubleField(Component.literal("Block_Breaking Threshold"),
+                        MovementConfig.punchMiningThreshold)
+                .setDefaultValue(0.08).setMin(0.0).setMax(1)
+                .setTooltip(
+                        Component.literal("how easily you break blocks"),
+                        Component.literal("0 make block damage just by touching"))
+                .setSaveConsumer(V -> MovementConfig.punchMiningThreshold = V).build());
+
+        BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Punch mining: no tool needed"), MovementConfig.punchMiningNoTool)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("Let punch mining break blocks with ANY item (even bare hands) —"),
+                        Component.literal("hand speed alone decides. Tool-required blocks still won't drop"),
+                        Component.literal("items without the right tool, like vanilla. Off by default."))
+                .setSaveConsumer(v -> MovementConfig.punchMiningNoTool = v).build());
+
+        BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Magma block sides hurt"), MovementConfig.magmaTouchDamage)
+                .setDefaultValue(true)
+                .setTooltip(
+                        Component.literal("Grabbing a magma block on ANY face (not just standing on top)"),
+                        Component.literal("deals the same hot-floor damage. Fire resistance negates it."))
+                .setSaveConsumer(v -> MovementConfig.magmaTouchDamage = v).build());
 
         // ====================================================================
         // GT PHYSICS — everything about the anchor-mode port of the official
@@ -361,39 +395,6 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.literal("Experimental — for testing the feel."),
                         Component.literal("leave comment which one is better this or default"))
                 .setSaveConsumer(v -> MovementConfig.iceFloorWallLogic = v).build());
-
-        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Punch mining (experimental)"), MovementConfig.punchMining)
-                .setDefaultValue(false)
-                .setTooltip(
-                        Component.literal("Break the block your hand touches — but only while holding the"),
-                        Component.literal("tool MEANT for it (pickaxe on stone, etc.) AND only when you PUNCH it"),
-                        Component.literal("(hand speed into the block). Gentle grabs never mine, so climbing"),
-                        Component.literal("with the tool in hand stays safe. Off by default."))
-                .setSaveConsumer(v -> MovementConfig.punchMining = v).build());
-
-        Experimental.addEntry(eb.startDoubleField(Component.literal("Block_Breaking Threshold"),
-                        MovementConfig.punchMiningThreshold)
-                            .setDefaultValue(0.08).setMin(0.0).setMax(1)
-                            .setTooltip(
-                             Component.literal("how easily you break blocks"),
-                             Component.literal("0 make block damage just by touching"))
-                             .setSaveConsumer(V -> MovementConfig.punchMiningThreshold = V).build());
-
-        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Punch mining: no tool needed"), MovementConfig.punchMiningNoTool)
-                .setDefaultValue(false)
-                .setTooltip(
-                        Component.literal("Let punch mining break blocks with ANY item (even bare hands) —"),
-                        Component.literal("hand speed alone decides. Tool-required blocks still won't drop"),
-                        Component.literal("items without the right tool, like vanilla. Off by default."))
-                .setSaveConsumer(v -> MovementConfig.punchMiningNoTool = v).build());
-
-        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Magma block sides hurt"), MovementConfig.magmaTouchDamage)
-                .setDefaultValue(true)
-                .setTooltip(
-                        Component.literal("Grabbing a magma block on ANY face (not just standing on top)"),
-                        Component.literal("deals the same hot-floor damage. Fire resistance negates it."))
-                .setSaveConsumer(v -> MovementConfig.magmaTouchDamage = v).build());
-
 
         return builder.build();
     }
