@@ -407,9 +407,10 @@ public class ModMenuIntegration implements ModMenuApi {
         Debugs.addEntry(eb.startBooleanToggle(Component.literal("Debug logging"), MovementConfig.debugLogging)
                 .setDefaultValue(false)
                 .setTooltip(
-                        Component.literal("Write a focused Vivecraft-interaction trace (teleport, room-origin"),
-                        Component.literal("re-sync, head-vs-body desync, grips) to logs/vivemonkecraft-debug.log."),
-                        Component.literal("Turn on, reproduce the issue in VR, then share that file."))
+                        Component.literal("Write a focused ViveMonkeCraft-interaction trace"),
+                        Component.literal("to logs/vivemonkecraft-debug.log."),
+                        Component.literal("Turn on, reproduce the issue in VR, then share that file."),
+                        Component.literal("this Is performance heavy Not recomended for quest"))
                 .setSaveConsumer(v -> MovementConfig.debugLogging = v).build());
         Debugs.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
                 .setDefaultValue(true)
