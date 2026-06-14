@@ -1133,7 +1133,7 @@ public class GorillaLocomotionHandler {
             if (!noGravSet) { player.setNoGravity(true); noGravSet = true; }
 
             // Wall-clip guard — zero any axis that would enter solid geometry.
-            player.setDeltaMovement(clampToBlocks(client, player, vel));
+            player.setDeltaMovement(clampToBlocks(client, player, commanded));
 
         } else {
             smoothedGripVel = Vec3.ZERO;
