@@ -765,8 +765,9 @@ public class GorillaLocomotionHandler {
                     player.setDeltaMovement(v.x * effectiveFriction, v.y, v.z * effectiveFriction);
                 }
 
-                // Ice speed cap (horizontal only — vertical fall is unaffected).
-                if (iceSpeedCap > 0.0) {
+                // Ice speed cap (horizontal only). Skipped under vanilla ice so momentum
+                // can build like real skating.
+                if (!vanillaIce && iceSpeedCap > 0.0) {
                     Vec3 v = player.getDeltaMovement();
                     double hs = Math.sqrt(v.x * v.x + v.z * v.z);
                     if (hs > iceSpeedCap) {
