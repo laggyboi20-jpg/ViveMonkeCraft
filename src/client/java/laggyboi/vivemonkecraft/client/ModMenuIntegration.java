@@ -512,7 +512,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 MovementConfig.maxJumpSpeed        = 3.0;
                 MovementConfig.velocityHistorySize = 4;
                 MovementConfig.groundFriction      = 0.7;
-                MovementConfig.gravityMultiplier   = 1.0;
+                MovementConfig.gravityMultiplier   = 0.9;
                 MovementConfig.monkeModel          = true;
                 MovementConfig.realMonke           = true;
                 MovementConfig.modelTorsoPitch     = -120.0;
