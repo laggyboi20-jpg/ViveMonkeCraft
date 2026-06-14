@@ -322,14 +322,14 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.gtPhysics = v).build());
 
         gtPage.addEntry(eb.startDoubleField(Component.literal("Push strength"), MovementConfig.gtPushStrength)
-                .setDefaultValue(1.0).setMin(0.1).setMax(5.0)
+                .setDefaultValue(1.0).setMin(0.1).setMax(100.0)
                 .setTooltip(
                         Component.literal("Body movement = hand movement × this."),
                         Component.literal("1.0 = authentic Gorilla Tag 1:1, 2.0 = twice as far, 0.5 = half."))
                 .setSaveConsumer(v -> MovementConfig.gtPushStrength = v).build());
 
         gtPage.addEntry(eb.startDoubleField(Component.literal("Drag gain"), MovementConfig.gtDragGain)
-                .setDefaultValue(0.30).setMin(0.05).setMax(0.95)
+                .setDefaultValue(0.30).setMin(0.05).setMax(100.0)
                 .setTooltip(
                         Component.literal("Fraction of the distance to the anchor corrected each tick."),
                         Component.literal("0.30 = smooth (default), 0.6 = snappier, 0.2 = softer."),
