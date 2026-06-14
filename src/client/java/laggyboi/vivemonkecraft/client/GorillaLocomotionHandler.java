@@ -580,7 +580,10 @@ public class GorillaLocomotionHandler {
             // the ice-WALL branch instead of the floor branch — gravity stays on,
             // no anchor glue, pure push-off momentum, exactly like an ice wall.
             // One line by design so it's trivial to remove after testing.
-            if (MovementConfig.iceFloorWallLogic && grabOnIce) wallGrip = true;
+            // ...but vanilla ice friction takes precedence: it WANTS ice floors handled as
+        // skating floors (momentum-preserving), not pushed into the wall branch which
+        // would replace your slide velocity with the swing and dead-stop you.
+        if (MovementConfig.iceFloorWallLogic && grabOnIce && !vanillaIce) wallGrip = true;
 
             if (wallGrip) {
 
