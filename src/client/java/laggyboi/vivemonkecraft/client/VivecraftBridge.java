@@ -41,6 +41,15 @@ public final class VivecraftBridge {
         return INSTANCE.isVRActive();
     }
 
+    /**
+     * Enable/disable Vivecraft's teleport movement at runtime (not a saved setting).
+     * We disable it while gorilla locomotion is active so the teleport button can't
+     * desync the room origin and break our physics. No-op if Vivecraft is absent.
+     */
+    public static void setTeleportDisabled(boolean disabled) {
+        INSTANCE.setTeleportOverride(disabled);
+    }
+
     // -----------------------------------------------------------------------
     // Connection lifecycle
     // -----------------------------------------------------------------------
@@ -135,6 +144,26 @@ public final class VivecraftBridge {
         } catch (Throwable t) {
             tpBroken = true;
             return false;
+        }
+    }
+
+    private boolean tpoTried  = false;
+    private boolean tpoBroken = false;
+    private Method  mSetTeleportOverride; // VRPlayer#setTeleportOverride(boolean)
+
+    /** Calls VRPlayer.setTeleportOverride(override); never throws. */
+    public void setTeleportOverride(boolean override) {
+        if (tpoBroken || tryWire() != Link.LEGACY) return;
+        try {
+            if (!tpoTried) {
+                tpoTried = true;
+                Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
+                mSetTeleportOverride = vrPlayer.getMethod("setTeleportOverride", boolean.class);
+            }
+            Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
+            if (vp != null) mSetTeleportOverride.invoke(vp, override);
+        } catch (Throwable t) {
+            tpoBroken = true;
         }
     }
 
