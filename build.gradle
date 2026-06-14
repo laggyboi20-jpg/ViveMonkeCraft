@@ -38,6 +38,12 @@ dependencies {
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
+    // NOTE: this had a literal "FILE_ID" placeholder version, which cursemaven can't
+    // resolve (HTTP 400) and breaks configuration once Loom's cache is rebuilt. The mod
+    // talks to Vivecraft/QuestCraft purely by reflection (VivecraftBridge), so it needs
+    // no compile-time VR API. Re-add with a REAL CurseForge file id if you ever want it.
+    // modApi "curse.maven:mcvrapi-591092:<real-file-id>"
+
     // -- Optional: enables the in-game config screen via Mod Menu --
     // modImplementation (remapped) for obfuscated 1.21.4.
     // (exclude fabric-api so we don't drag in a second copy.)
