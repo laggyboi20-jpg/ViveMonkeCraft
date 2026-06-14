@@ -19,7 +19,7 @@ optional server companion unlocks it (and lets admins cap it) on dedicated serve
 | Optional | Mod Menu + Cloth Config (in-game settings screen) |
 | Optional | **ViveMonke server mod** (`monke-server`) — only for **dedicated** servers |
 
-The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft active execept show you're frinds without legs who has it turned on monke locomotion.
+The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft active Execpt show you're friends without legs.
 
 ---
 
@@ -30,7 +30,7 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
   don't double-move.
 - **Throw / jump** — let go while swinging fast and you launch, scaled by *jump power*
   and hard-capped so a tracking glitch can't rocket you.
-- **Long Arms** — "Long arms" let you touch the ground from standing height
+- **Reach extension** — "gorilla arms" let you touch the ground from standing height
   without physically reaching; your real swing is still measured 1:1 so movement
   never feels twitchy.
 - **Climbing & wall behaviour** — cling and climb walls, or set them to slide; a
@@ -52,7 +52,7 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
 - Ice is slippery on **every** face — push off ice walls for momentum, but you can't
   cling or climb them.
 - Tunable ice speed multiplier kept low for Quest performance.
-- **Experimental:** make ice *floors* behave like ice *walls* (pure push-off, no glue) leave feedback somewhere which one is better default or this one.
+- **Experimental:** make ice *floors* behave like ice *walls* (pure push-off, no glue).
 
 ## Gorilla body ("Real Monke" & Monke Model)
 
@@ -109,7 +109,7 @@ Movement, GT-Physics, Reach & Body, Jump & Gravity, and Visual pages. Changes ap
 live. Everything is also editable in `config/vivemonkecraft.properties`.
 
 **Presets:** *Tutorial* (easiest to move), *Default*, *Long Arms*, *Zero Gravity*,
-*Speed Run*.
+*Speed Run* — and a *Gorilla Tag Feel* setup for the authentic experience.
 
 ---
 
@@ -153,21 +153,28 @@ server that hasn't allowed it.
 ./gradlew build      # client mod  ->  build/libs/
 ```
 
-The server companion lives in its own project (`ViveMonkeCraft-ServerBuild`)
+The server companion lives in its own project (`ViveMonke(Quest)Craft-ServerBuild`)
 and builds the same way.
 
 ---
 
-## License
+## License & Credits
 
-MIT — see [LICENSE](LICENSE).
+This project's own code is **MIT** — see [LICENSE](LICENSE). Full upstream license
+texts are in the [`third party license/`](third%20party%20license) folder.
+
+**Credits for the open-sourced code and the idea (MIT and LGPLv3):**
+
+| Source | License |
+|---|---|
+| Kerestell Smith — [Another-Axiom/GorillaLocomotion](https://github.com/Another-Axiom/GorillaLocomotion) | MIT |
+| unbaswastaken — [gorillalocomotion-VR-MINECRAFT](https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT) | MIT |
+| Vivecraft team — [VivecraftMod](https://github.com/Vivecraft/VivecraftMod) | LGPLv3 |
+| LaggyBoi | — |
+| Claude Code | — |
+
+**Vivecraft** is **LGPLv3** and is accessed at runtime via reflection only — it is
+**not bundled or modified** by this mod; players supply their own Vivecraft/QuestCraft.
 
 *Not affiliated with Another Axiom or Gorilla Tag. "Gorilla Tag" is referenced only to
 describe the movement style.*
-
-# Credits for the code that is open sourced Under MIT And  LGPLv3 License
-- Kerestell Smith/Another Axiom https://github.com/Another-Axiom/GorillaLocomotion MIT
-- unbaswastaken https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT its in the zip file MIT
-- Vivecraft team https://github.com/Vivecraft/VivecraftMod LGPLv3
-- LaggyBoi
-- Claude Code
