@@ -171,7 +171,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                             }
                             if (context.client().player != null) {
                                 context.client().gui.setOverlayMessage(
-                                    Component.literal("§e[ViveMonke(Quest)Craft] §cDisabled by server"),
+                                    Component.literal("§e[ViveMonkeCraft] §cDisabled by server"),
                                     false
                                 );
                             }
@@ -246,8 +246,8 @@ public class VivemonkecraftClient implements ClientModInitializer {
                                 if (mc.player != null) {
                                     mc.gui.setOverlayMessage(Component.literal(
                                         result != null
-                                            ? "§e[ViveMonke(Quest)Craft] §f" + result
-                                            : "§c[ViveMonke(Quest)Craft] §fUnknown setting or bad value: "
+                                            ? "§e[ViveMonkeCraft] §f" + result
+                                            : "§c[ViveMonkeCraft] §fUnknown setting or bad value: "
                                                 + name + " " + value),
                                         false);
                                 }
@@ -266,7 +266,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                             if (mc.player == null || !mc.player.hasPermissions(2)) {
                                 if (mc.player != null) {
                                     mc.gui.setOverlayMessage(
-                                        Component.literal("§c[ViveMonke(Quest)Craft] §fNeed operator access to change gravity"),
+                                        Component.literal("§c[ViveMonkeCraft] §fNeed operator access to change gravity"),
                                         false
                                     );
                                 }
@@ -276,7 +276,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                             MovementConfig.gravityMultiplier = level;
                             MovementConfig.save();
                             mc.gui.setOverlayMessage(
-                                Component.literal("§e[ViveMonke(Quest)Craft] §fGravity: §b" + level
+                                Component.literal("§e[ViveMonkeCraft] §fGravity: §b" + level
                                     + (level == 0.0 ? " §7(zero-G)" : level == 1.0 ? " §7(normal)" : "")),
                                 false
                             );
@@ -313,7 +313,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                 } else if (!warnedNoServerMod) {
                     warnedNoServerMod = true;
                     client.player.displayClientMessage(Component.literal(
-                        "§e[ViveMonke(Quest)Craft] §cThis server doesn't run the monke-server "
+                        "§e[ViveMonkeCraft] §cThis server doesn't run the monke-server "
                         + "companion mod, so gorilla locomotion is disabled here. "
                         + "§7(Server admins: install the ViveMonke server mod to allow it.)"),
                         false);
@@ -471,7 +471,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         if (on && !serverAuthorized(client)) {
             if (client.player != null) {
                 client.gui.setOverlayMessage(
-                    Component.literal("§e[ViveMonke(Quest)Craft] §cThis server doesn't run the monke-server mod"),
+                    Component.literal("§e[ViveMonkeCraft] §cThis server doesn't run the monke-server mod"),
                     false
                 );
             }
@@ -483,7 +483,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         if (on && !ServerLimits.modEnabled) {
             if (client.player != null) {
                 client.gui.setOverlayMessage(
-                    Component.literal("§e[ViveMonke(Quest)Craft] §cDisabled by server"),
+                    Component.literal("§e[ViveMonkeCraft] §cDisabled by server"),
                     false
                 );
             }
@@ -507,7 +507,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
             String state = on ? "§aON" : "§cOFF";
             // Show in the action bar (overlay message).
             client.gui.setOverlayMessage(
-                Component.literal("§e[ViveMonke(Quest)Craft] §fGorilla Locomotion: " + state),
+                Component.literal("§e[ViveMonkeCraft] §fGorilla Locomotion: " + state),
                 false
             );
         }
@@ -518,7 +518,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
             client.gui.setOverlayMessage(
-                Component.literal("§e[ViveMonke(Quest)Craft] §fConfig reloaded"),
+                Component.literal("§e[ViveMonkeCraft] §fConfig reloaded"),
                 false
             );
         }
