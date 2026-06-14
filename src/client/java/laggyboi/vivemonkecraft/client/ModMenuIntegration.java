@@ -122,6 +122,11 @@ public class ModMenuIntegration implements ModMenuApi {
                 Component.literal("OFF = old behaviour: an upward velocity boost arcs you over it."))
             .setSaveConsumer(v -> MovementConfig.stepTeleport = v).build());
 
+        movement.addEntry(eb.startBooleanToggle(Component.literal("Step assist"), MovementConfig.stepAssist)
+                .setDefaultValue(true)
+                .setTooltip(Component.literal("Raise step height so legs stop snagging on block edges."))
+                .setSaveConsumer(v -> MovementConfig.stepAssist = v).build());
+
         movement.addEntry(eb.startDoubleField(Component.literal("Push speed"), MovementConfig.pullStrength)
             .setDefaultValue(2.0).setMin(0.0).setMax(8.0)
             .setTooltip(Component.literal("How strongly your swing moves you. 1.0 = 1:1, higher = faster. (Ignored in anchor mode — that is always 1:1.)"))
@@ -181,11 +186,6 @@ public class ModMenuIntegration implements ModMenuApi {
             .setDefaultValue(0.25).setMin(0.2).setMax(1.0)
             .setTooltip(Component.literal("Shrinks your collision box height to climb onto blocks. 1.0 = normal, 0.25 = compact (default)."))
             .setSaveConsumer(v -> MovementConfig.hitboxHeightScale = v).build());
-
-        body.addEntry(eb.startBooleanToggle(Component.literal("Step assist"), MovementConfig.stepAssist)
-            .setDefaultValue(true)
-            .setTooltip(Component.literal("Raise step height so legs stop snagging on block edges."))
-            .setSaveConsumer(v -> MovementConfig.stepAssist = v).build());
 
         body.addEntry(eb.startDoubleField(Component.literal("Step height"), MovementConfig.stepHeight)
             .setDefaultValue(1.5).setMin(0.5).setMax(2.0)
