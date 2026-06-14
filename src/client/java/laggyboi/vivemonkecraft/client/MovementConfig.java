@@ -353,6 +353,7 @@ public final class MovementConfig {
         punchMiningThreshold = 0.08;
         punchMiningNoTool   = false;
         magmaTouchDamage    = true;
+        vanillaIceFriction  = false;
     }
 
     // Reads the file into the fields above. Safe to call repeatedly. Never throws.
@@ -415,6 +416,7 @@ public final class MovementConfig {
                     punchMiningThreshold = parseD(p, "punchMiningThreshold", punchMiningThreshold);
                     punchMiningNoTool   = parseB(p, "punchMiningNoTool",   punchMiningNoTool);
                     magmaTouchDamage    = parseB(p, "magmaTouchDamage",    magmaTouchDamage);
+                    vanillaIceFriction  = parseB(p, "vanillaIceFriction",  vanillaIceFriction);
                     clampHandModels     = parseB(p, "clampHandModels",     clampHandModels);
                 }
             } else {
