@@ -690,12 +690,17 @@ public class GorillaLocomotionHandler {
                 // (maxJumpSpeed × 0.4) so ice stays controllable on Quest hardware.
                 if (!noGravSet) { player.setNoGravity(true); noGravSet = true; }
                 // Merge feet-ice and grab-ice: ice is slippery from any contact face.
-                double keep = (onIce || grabOnIce) ? 1.0 : 1.0 - MovementConfig.floorStickiness;
+                // VANILLA ICE: keep = block friction × 0.91 (a slow decay → real skating),
+                // instead of the mod's keep=1.0 (never decays) on ice.
+                double keep = vanillaIce ? iceKeepVanilla
+                            : (onIce || grabOnIce) ? 1.0
+                            : 1.0 - MovementConfig.floorStickiness;
                 keep = Math.max(0.0, Math.min(1.0, keep));
                 Vec3   cur      = player.getDeltaMovement();
                 double nx       = vel.x + cur.x * keep;
                 double nz       = vel.z + cur.z * keep;
-                // Use the higher speed cap from either feet or grab.
+                // Use the higher speed cap from either feet or grab. Vanilla ice removes
+                // the artificial ice cap so momentum can build like real skating.
                 double effectiveIceSpeedCap = Math.max(iceSpeedCap, grabIceSpeedCap);
                 double speedCap = vanillaIce ? effMaxSpd
                                 : (effectiveIceSpeedCap > 0.0) ? effectiveIceSpeedCap : effMaxSpd;
