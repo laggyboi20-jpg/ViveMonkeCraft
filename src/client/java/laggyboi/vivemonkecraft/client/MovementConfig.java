@@ -617,7 +617,9 @@ public final class MovementConfig {
             sb.append("# Punch mining without the matching tool (any item / bare hands). true/false.\n");
             sb.append("punchMiningNoTool=").append(punchMiningNoTool).append("\n\n");
             sb.append("# Grabbing a magma block (any face) hurts you like standing on it. true/false.\n");
-            sb.append("magmaTouchDamage=").append(magmaTouchDamage).append("\n");
+            sb.append("magmaTouchDamage=").append(magmaTouchDamage).append("\n\n");
+            sb.append("# EXPERIMENTAL - vanilla ice friction on hands/feet (skate physics). true/false.\n");
+            sb.append("vanillaIceFriction=").append(vanillaIceFriction).append("\n");
 
             Files.writeString(path, sb.toString());
         } catch (Exception e) {
