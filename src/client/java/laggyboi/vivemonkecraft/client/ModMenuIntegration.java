@@ -233,11 +233,6 @@ public class ModMenuIntegration implements ModMenuApi {
         // ====================================================================
         ConfigCategory visual = builder.getOrCreateCategory(Component.literal("Visual"));
 
-        visual.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
-            .setDefaultValue(true)
-            .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
-            .setSaveConsumer(v -> MovementConfig.showHandMarkers = v).build());
-
         visual.addEntry(eb.startBooleanToggle(Component.literal("Clamp hand models to surfaces"), MovementConfig.clampHandModels)
             .setDefaultValue(true)
             .setTooltip(
@@ -420,7 +415,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setDefaultValue(true)
                 .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
                 .setSaveConsumer(v -> MovementConfig.showHandMarkers = v).build());
-        
+
         return builder.build();
     }
 
