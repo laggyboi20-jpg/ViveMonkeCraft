@@ -1,0 +1,19 @@
+# Gradle files (Fixes your "Filename too long" error)
+.gradle/
+build/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Compiled Java files
+*.class
+*.jar
+*.war   

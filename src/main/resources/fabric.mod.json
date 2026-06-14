@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "vivemonkecraft",
+  "version": "${version}",
+  "name": "ViveMonke(Quest)Craft",
+  "description": "Gorilla Tag-style VR locomotion for Minecraft 1.21.4. Requires QuestCraft (Vivecraft 1.2.x). Grab surfaces with your hands and swing through the world.",
+  "authors": [
+    "Laggyboi"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/vivemonkecraft/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-datagen": [
+      "laggyboi.vivemonkecraft.client.VivemonkecraftDataGenerator"
+    ],
+    "client": [
+      "laggyboi.vivemonkecraft.client.VivemonkecraftClient"
+    ],
+    "main": [
+      "laggyboi.vivemonkecraft.Vivemonkecraft"
+    ],
+    "modmenu": [
+      "laggyboi.vivemonkecraft.client.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "vivemonkecraft.mixins.json",
+    {
+      "config": "vivemonkecraft.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "cloth-config": "*"
+  }
+}
