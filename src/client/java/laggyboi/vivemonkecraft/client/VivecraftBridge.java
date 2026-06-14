@@ -147,6 +147,32 @@ public final class VivecraftBridge {
         }
     }
 
+    private boolean snapTried  = false;
+    private boolean snapBroken = false;
+    private Method  mSnapOrigin; // VRPlayer#snapRoomOriginToPlayerEntity(Entity,boolean,boolean)
+
+    /**
+     * Force Vivecraft's room origin to re-sync to the player entity — the fix for a
+     * teleport leaving the origin behind (you slide in place / can't push afterwards).
+     * Args (false, true) mirror Vivecraft's own JumpTracker re-sync. Call ONLY right
+     * after a teleport, never every tick — it cancels roomscale walking otherwise.
+     */
+    public void snapRoomOriginToPlayer(net.minecraft.world.entity.Entity player) {
+        if (snapBroken || player == null || tryWire() != Link.LEGACY) return;
+        try {
+            if (!snapTried) {
+                snapTried = true;
+                Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
+                mSnapOrigin = vrPlayer.getMethod("snapRoomOriginToPlayerEntity",
+                        net.minecraft.world.entity.Entity.class, boolean.class, boolean.class);
+            }
+            Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
+            if (vp != null) mSnapOrigin.invoke(vp, player, false, true);
+        } catch (Throwable t) {
+            snapBroken = true;
+        }
+    }
+
     private boolean tpoTried  = false;
     private boolean tpoBroken = false;
     private Method  mSetTeleportOverride; // VRPlayer#setTeleportOverride(boolean)
