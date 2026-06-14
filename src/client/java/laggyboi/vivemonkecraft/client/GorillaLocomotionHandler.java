@@ -643,7 +643,13 @@ public class GorillaLocomotionHandler {
                     // fresh re-grab and gravity is on the whole time).
                     double ny = (MovementConfig.iceFloorWallLogic && vel.y > 0.03)
                             ? vel.y : down;
-                    player.setDeltaMovement(vel.x, ny, vel.z);
+                    // Vanilla ice: KEEP horizontal momentum (block friction × 0.91) and
+                    // add the swing, so even a grab routed here skates instead of
+                    // dead-stopping. Otherwise horizontal = the swing (vanilla-off feel).
+                    Vec3   icw = player.getDeltaMovement();
+                    double nxw = vanillaIce ? vel.x + icw.x * iceKeepVanilla : vel.x;
+                    double nzw = vanillaIce ? vel.z + icw.z * iceKeepVanilla : vel.z;
+                    player.setDeltaMovement(nxw, ny, nzw);
                     if (ny < 0 && !player.onGround()) wallSliding = true;
                 } else {
                     // LOW-STICK WALL — the swing drives the body 1:1 with a downward
