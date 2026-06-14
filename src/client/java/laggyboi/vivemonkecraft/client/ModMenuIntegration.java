@@ -396,6 +396,15 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.literal("leave comment which one is better this or default"))
                 .setSaveConsumer(v -> MovementConfig.iceFloorWallLogic = v).build());
 
+        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Vanilla ice friction"), MovementConfig.vanillaIceFriction)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("Ice acts on your hands/feet like vanilla legs do: you SKATE with"),
+                        Component.literal("the block's real friction (×0.91 inertia) and no speed cap, instead"),
+                        Component.literal("of the mod's frictionless-but-capped ice. Floor/feet only — the"),
+                        Component.literal("ice-wall push-off is unchanged."))
+                .setSaveConsumer(v -> MovementConfig.vanillaIceFriction = v).build());
+
         return builder.build();
     }
 
