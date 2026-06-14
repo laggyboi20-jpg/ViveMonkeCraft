@@ -267,6 +267,12 @@ public final class MovementConfig {
     // true/false.
     public static boolean magmaTouchDamage = true;
 
+    // EXPERIMENTAL — VANILLA ICE FRICTION: when on, gripping/standing on ice makes you
+    // skate with VANILLA ice physics (the block's own friction × 0.91 inertia, no speed
+    // cap) instead of the mod's frictionless-but-capped ice. Floor/feet only — the
+    // ice-WALL push-off is unchanged (legs have no wall analog). true/false.
+    public static boolean vanillaIceFriction = false;
+
 
     // NOTE: presets live in ModMenuIntegration (the Mod Menu config screen) — the
     // old in-class preset system was unused and has been removed.
