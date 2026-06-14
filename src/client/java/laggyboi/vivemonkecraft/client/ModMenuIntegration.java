@@ -101,7 +101,7 @@ public class ModMenuIntegration implements ModMenuApi {
                     Component.literal("Default     — Reset all settings to factory defaults."),
                     Component.literal("Gorilla Tag — Authentic GT feel: stronger throws, less air drag."),
                     Component.literal("Zero Gravity— Float after letting go; space-like movement."),
-                    Component.literal("Speed Run   — Very powerful launches, long arms, low air drag.")
+                    Component.literal("Speed Run   — Very powerful launches, low air drag.")
                 )
                 // Just STORE the name — applyPreset() is called in setSavingRunnable
                 // (which runs after ALL slider save consumers) so the preset wins.
@@ -410,9 +410,9 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.literal("Write a focused ViveMonkeCraft-interaction trace"),
                         Component.literal("to logs/vivemonkecraft-debug.log."),
                         Component.literal("Turn on, reproduce the issue in VR, then share that file."),
-                        Component.literal("this Is performance heavy Not recomended for quest"))
+                        Component.literal("this Is performance heavy Not recommended for quest"))
                 .setSaveConsumer(v -> MovementConfig.debugLogging = v).build());
-        
+
         Debugs.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
                 .setDefaultValue(true)
                 .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
