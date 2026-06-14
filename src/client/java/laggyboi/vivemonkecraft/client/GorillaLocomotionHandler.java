@@ -282,6 +282,12 @@ public class GorillaLocomotionHandler {
         // stale VR hand positions while Vivecraft re-syncs its room origin.
         if (teleportCooldown > 0) {
             teleportCooldown--;
+            // ROOT FIX for "teleport breaks physics": a Vivecraft teleport leaves the
+            // room origin behind the player entity, so our hand/head world positions are
+            // stale → grips anchor to the old spot and drag you (slide in place) or
+            // pushes don't register. Force the origin to re-sync to the entity each
+            // settle tick so that, once the cooldown ends, everything lines up again.
+            vr.snapRoomOriginToPlayer(player);
             // Keep grips DROPPED through the whole settle so the first grip after it is
             // computed fresh from the re-synced hand positions (no stale anchor → no
             // slide-in-place). wasGripping cleared too so grab-end logic can't fire.
