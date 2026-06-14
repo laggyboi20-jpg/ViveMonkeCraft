@@ -755,7 +755,9 @@ public class GorillaLocomotionHandler {
             //     floorStickiness 1.0 = full friction (stops fast)
             //     floorStickiness 0.0 = frictionless (same feel as ice)
             if (!threw && player.onGround()) {
-                double effectiveFriction = onIce
+                double effectiveFriction = vanillaIce
+                        ? iceKeepVanilla   // vanilla ice: slow decay (≈0.89) → skating
+                        : onIce
                         ? 1.0   // zero friction — no damping at all
                         : Math.max(0.0, Math.min(1.0,
                               MovementConfig.groundFriction * MovementConfig.floorStickiness));
