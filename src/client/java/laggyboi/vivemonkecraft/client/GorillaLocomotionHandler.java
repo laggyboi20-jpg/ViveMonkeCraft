@@ -1132,6 +1132,16 @@ public class GorillaLocomotionHandler {
             // Gripping: gravity off (the anchor holds you), body dragged to anchor.
             if (!noGravSet) { player.setNoGravity(true); noGravSet = true; }
 
+            // Normally the anchor servo REPLACES velocity with the drag, so gripping an
+            // icy floor kills your glide dead. With vanilla ice on, instead KEEP the
+            // incoming horizontal momentum (block friction × 0.91) and ADD the servo
+            // push on top — so you skate/push off the ice instead of stopping.
+            Vec3 commanded = vel;
+            if (vanillaIce) {
+                Vec3 cur = player.getDeltaMovement();
+                commanded = new Vec3(vel.x + cur.x * iceKeepVanilla, vel.y, vel.z + cur.z * iceKeepVanilla);
+            }
+
             // Wall-clip guard — zero any axis that would enter solid geometry.
             player.setDeltaMovement(clampToBlocks(client, player, commanded));
 
