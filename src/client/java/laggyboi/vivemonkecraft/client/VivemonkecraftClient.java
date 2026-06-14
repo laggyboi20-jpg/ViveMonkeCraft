@@ -435,9 +435,11 @@ public class VivemonkecraftClient implements ClientModInitializer {
         if (client.hasSingleplayerServer()) return;
         if (!ClientPlayNetworking.canSend(WallSlideC2SPayload.ID)) return;
         if (gripping) {
+            if (!wallSlideSent) VmcDebugLog.event("NET", "→ WallSlide(true) [no-fall-damage]");
             ClientPlayNetworking.send(new WallSlideC2SPayload(true));
             wallSlideSent = true;
         } else if (wallSlideSent) {
+            VmcDebugLog.event("NET", "→ WallSlide(false)");
             ClientPlayNetworking.send(new WallSlideC2SPayload(false));
             wallSlideSent = false;
         }
@@ -517,6 +519,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         }
 
         enabled = on;
+        VmcDebugLog.event("STATE", "gorilla locomotion " + (on ? "ENABLED" : "DISABLED"));
 
         if (on) {
             // Turning ON: re-read the config so edits apply, no restart needed.
