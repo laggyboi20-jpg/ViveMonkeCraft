@@ -1163,7 +1163,9 @@ public class GorillaLocomotionHandler {
             double   feetIce = iceBlockMultiplier(client, feetPos);
             boolean  onIce   = feetIce > 0.0;
             if (!threw && player.onGround()) {
-                double effectiveFriction = onIce
+                double effectiveFriction = vanillaIce
+                        ? iceKeepVanilla
+                        : onIce
                         ? 1.0
                         : Math.max(0.0, Math.min(1.0,
                               MovementConfig.groundFriction * MovementConfig.floorStickiness));
