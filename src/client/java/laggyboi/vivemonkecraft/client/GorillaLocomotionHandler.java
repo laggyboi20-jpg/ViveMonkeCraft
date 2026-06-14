@@ -1159,8 +1159,7 @@ public class GorillaLocomotionHandler {
             }
 
             // Ground friction (ice = frictionless, capped at the ice speed cap).
-            BlockPos feetPos = BlockPos.containing(
-                    player.getX(), player.getBoundingBox().minY - 0.1, player.getZ());
+            // feetPos / iceKeepVanilla / vanillaIce were computed up top (shared).
             double   feetIce = iceBlockMultiplier(client, feetPos);
             boolean  onIce   = feetIce > 0.0;
             if (!threw && player.onGround()) {
