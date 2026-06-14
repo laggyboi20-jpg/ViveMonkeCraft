@@ -334,8 +334,10 @@ public class VivemonkecraftClient implements ClientModInitializer {
         boolean vrActive = VivecraftBridge.isVrActive();
         if (autoStarted && client.player != null) {
             if (vrActive && !vrWasActive) {
+                VmcDebugLog.event("VR", "headset ACTIVE");
                 if (!enabled && serverAuthorized(client) && ServerLimits.modEnabled) applyEnabled(true);
             } else if (!vrActive && vrWasActive) {
+                VmcDebugLog.event("VR", "headset INACTIVE");
                 if (enabled) applyEnabled(false);
             }
             vrWasActive = vrActive;
