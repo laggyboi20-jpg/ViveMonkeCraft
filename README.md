@@ -90,7 +90,7 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
 
 ## Controls & configuration
 
-**Toggle the mod:** bind *"ViveMonke(Quest)Craft: Toggle"* in Controls, or to a
+**Toggle the mod:** bind *"ViveMonkeCraft: Toggle"* in Controls, or to a
 Vivecraft radial-menu slot. It auto-enables when you join a world.
 
 **Chat commands** (`/vmc`):
@@ -153,7 +153,7 @@ server that hasn't allowed it.
 ./gradlew build      # client mod  ->  build/libs/
 ```
 
-The server companion lives in its own project (`ViveMonke(Quest)Craft-ServerBuild`)
+The server companion lives in its own project (`ViveMonkeCraft-ServerBuild`)
 and builds the same way.
 
 ---

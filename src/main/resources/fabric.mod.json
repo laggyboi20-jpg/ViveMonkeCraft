@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "vivemonkecraft",
   "version": "${version}",
-  "name": "ViveMonke(Quest)Craft",
-  "description": "Gorilla Tag-style VR locomotion for Minecraft 1.21.4. Requires QuestCraft (Vivecraft 1.2.x). Grab surfaces with your hands and swing through the world.",
+  "name": "ViveMonkeCraft",
+  "description": "Gorilla Tag-style VR locomotion for Minecraft 1.21.4. Requires QuestCraft or Vivecraft 1.2.x. Grab surfaces with your hands and swing through the world.",
   "authors": [
     "Laggyboi"
   ],

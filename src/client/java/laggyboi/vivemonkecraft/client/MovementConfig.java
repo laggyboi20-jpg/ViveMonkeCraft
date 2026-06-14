@@ -369,7 +369,7 @@ public final class MovementConfig {
                 // preset (then re-save below), so improved defaults actually take effect.
                 int savedVersion = (int) parseD(p, "configVersion", 0);
                 if (savedVersion < CURRENT_CONFIG_VERSION) {
-                    System.out.println("[ViveMonke(Quest)Craft] Config is old (v" + savedVersion
+                    System.out.println("[ViveMonkeCraft] Config is old (v" + savedVersion
                         + "); resetting to v" + CURRENT_CONFIG_VERSION + " defaults.");
                     applyDefaultPreset();
                 } else {
@@ -420,11 +420,11 @@ public final class MovementConfig {
             } else {
                 // FIRST RUN — no config file yet. Start from the curated Default
                 // preset instead of the bare field initializers, then save it.
-                System.out.println("[ViveMonke(Quest)Craft] First run — applying Default preset.");
+                System.out.println("[ViveMonkeCraft] First run — applying Default preset.");
                 applyDefaultPreset();
             }
         } catch (Exception e) {
-            System.out.println("[ViveMonke(Quest)Craft] Could not read config, using defaults: " + e);
+            System.out.println("[ViveMonkeCraft] Could not read config, using defaults: " + e);
         }
         save();
     }
@@ -437,7 +437,7 @@ public final class MovementConfig {
 
             StringBuilder sb = new StringBuilder();
             sb.append("# ============================================================\n");
-            sb.append("# ViveMonke(Quest)Craft - Gorilla Tag locomotion settings\n");
+            sb.append("# ViveMonkeCraft - Gorilla Tag locomotion settings\n");
             sb.append("# Edit a value, save, then run /vmc reload in-game (or toggle off+on).\n");
             sb.append("# Lines starting with '#' are comments and are ignored.\n");
             sb.append("# ============================================================\n\n");
@@ -621,7 +621,7 @@ public final class MovementConfig {
 
             Files.writeString(path, sb.toString());
         } catch (Exception e) {
-            System.out.println("[ViveMonke(Quest)Craft] Could not write config: " + e);
+            System.out.println("[ViveMonkeCraft] Could not write config: " + e);
         }
     }
 

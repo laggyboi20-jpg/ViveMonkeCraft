@@ -167,14 +167,14 @@ public final class VivecraftBridge {
             fC1           = vrDataType.getField("c1");
             mGetPosition  = vrDevicePoseType.getMethod("getPosition");
 
-            System.out.println("[ViveMonke(Quest)Craft] QuestCraft API connected (Vivecraft 1.2.x / QCXR)");
+            System.out.println("[ViveMonkeCraft] QuestCraft API connected (Vivecraft 1.2.x / QCXR)");
             return Link.LEGACY;
 
         } catch (ClassNotFoundException e) {
-            System.out.println("[ViveMonke(Quest)Craft] QuestCraft not found — mod requires QuestCraft / Vivecraft 1.2.x.");
+            System.out.println("[ViveMonkeCraft] QuestCraft not found — mod requires QuestCraft / Vivecraft 1.2.x.");
             return Link.MISSING;
         } catch (ReflectiveOperationException e) {
-            System.out.println("[ViveMonke(Quest)Craft] QuestCraft API present but unusable: " + e);
+            System.out.println("[ViveMonkeCraft] QuestCraft API present but unusable: " + e);
             return Link.MISSING;
         }
     }

@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
 // =====================================================================
 //
 // This makes a settings screen show up in the "Mods" list (Mod Menu): find
-// ViveMonke(Quest)Craft, click the little gear/config button, and you get sliders and
+// ViveMonkeCraft, click the little gear/config button, and you get sliders and
 // toggles for everything — no need to edit the .properties file by hand.
 //
 // It's OPTIONAL: it only does anything if Mod Menu + Cloth Config are installed
