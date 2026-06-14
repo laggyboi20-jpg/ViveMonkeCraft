@@ -497,7 +497,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 MovementConfig.modelTorsoPitch     = -120.0;
                 break;
 
-            case "Parkour / Speed Run":
+            case "Speed Run":
                 // Built for covering ground as fast as possible:
                 //   - Very high pull strength for huge launches.
                 //   - Long gorilla arms to grab from further away.
