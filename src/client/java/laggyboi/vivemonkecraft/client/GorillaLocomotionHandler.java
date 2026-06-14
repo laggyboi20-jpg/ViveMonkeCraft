@@ -1107,6 +1107,13 @@ public class GorillaLocomotionHandler {
         int gripCount   = (mainHand.gripping ? 1 : 0) + (offHand.gripping ? 1 : 0);
         boolean anyGrip = gripCount > 0;
 
+        // EXPERIMENTAL vanilla ice friction — detect an icy floor/grab surface once for
+        // BOTH the gripping (momentum-preserving skate) and free-slide paths below.
+        BlockPos feetPos        = BlockPos.containing(
+                player.getX(), player.getBoundingBox().minY - 0.1, player.getZ());
+        double   iceKeepVanilla = vanillaIceKeep(client, feetPos, touchMain, touchOff);
+        boolean  vanillaIce     = iceKeepVanilla > 0.0;
+
         // Both hands anchored → average so two hands don't double the drag.
         Vec3 move = (gripCount == 2) ? dragMain.add(dragOff).scale(0.5)
                                      : dragMain.add(dragOff);
