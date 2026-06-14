@@ -1173,7 +1173,7 @@ public class GorillaLocomotionHandler {
                     Vec3 v = player.getDeltaMovement();
                     player.setDeltaMovement(v.x * effectiveFriction, v.y, v.z * effectiveFriction);
                 }
-                if (onIce) {
+                if (onIce && !vanillaIce) {
                     double iceCap = effMaxSpd * feetIce;
                     Vec3 v  = player.getDeltaMovement();
                     double hs = Math.sqrt(v.x * v.x + v.z * v.z);
