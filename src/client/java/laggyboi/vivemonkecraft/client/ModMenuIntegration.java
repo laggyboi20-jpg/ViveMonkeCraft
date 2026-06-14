@@ -405,6 +405,22 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.literal("ice-wall push-off is unchanged."))
                 .setSaveConsumer(v -> MovementConfig.vanillaIceFriction = v).build());
 
+
+
+        //Debug Options
+        ConfigCategory Debugs = builder.getOrCreateCategory(Component.literal("Debug Options"));
+        Debugs.addEntry(eb.startBooleanToggle(Component.literal("Debug logging"), MovementConfig.debugLogging)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("Write a focused Vivecraft-interaction trace (teleport, room-origin"),
+                        Component.literal("re-sync, head-vs-body desync, grips) to logs/vivemonkecraft-debug.log."),
+                        Component.literal("Turn on, reproduce the issue in VR, then share that file."))
+                .setSaveConsumer(v -> MovementConfig.debugLogging = v).build());
+        Debugs.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
+                .setDefaultValue(true)
+                .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
+                .setSaveConsumer(v -> MovementConfig.showHandMarkers = v).build());
+        
         return builder.build();
     }
 
