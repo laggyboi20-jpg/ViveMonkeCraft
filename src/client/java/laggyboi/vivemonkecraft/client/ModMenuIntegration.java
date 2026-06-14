@@ -506,8 +506,8 @@ public class ModMenuIntegration implements ModMenuApi {
                 //   - High max speed so you can actually rocket.
                 MovementConfig.pullStrength        = 5.0;
                 MovementConfig.handReachMultiplier = 3.0;
-                MovementConfig.maxArmLength        = 4.0;
-                MovementConfig.airFriction         = 0.0;
+                MovementConfig.maxArmLength        = 1.0;
+                MovementConfig.airFriction         = 0.1;
                 MovementConfig.jumpMultiplier      = 3.5;
                 MovementConfig.maxJumpSpeed        = 3.0;
                 MovementConfig.velocityHistorySize = 4;
