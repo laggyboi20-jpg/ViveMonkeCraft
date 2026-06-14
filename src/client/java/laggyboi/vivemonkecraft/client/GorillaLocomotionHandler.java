@@ -558,6 +558,12 @@ public class GorillaLocomotionHandler {
         boolean grabOnIce       = grabIceMult > 0.0;
         double  grabIceSpeedCap = grabOnIce ? effMaxSpd * grabIceMult : 0.0;
 
+        // EXPERIMENTAL vanilla ice friction: keep factor of the icy floor/grab surface
+        // (block friction × 0.91). >0 means "skate with vanilla physics this tick" — the
+        // branches below then use this instead of the frictionless+capped ice handling.
+        double  iceKeepVanilla  = vanillaIceKeep(client, iceFeetPos, touchMain, touchOff);
+        boolean vanillaIce      = iceKeepVanilla > 0.0;
+
         // ---- APPLY ----
         if (anyGrip) {
             // While gripping (climbing OR sliding) you're in control — never take fall
