@@ -412,6 +412,7 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.literal("Turn on, reproduce the issue in VR, then share that file."),
                         Component.literal("this Is performance heavy Not recomended for quest"))
                 .setSaveConsumer(v -> MovementConfig.debugLogging = v).build());
+        
         Debugs.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
                 .setDefaultValue(true)
                 .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
