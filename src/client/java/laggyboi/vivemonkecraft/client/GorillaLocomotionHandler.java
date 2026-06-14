@@ -697,7 +697,8 @@ public class GorillaLocomotionHandler {
                 double nz       = vel.z + cur.z * keep;
                 // Use the higher speed cap from either feet or grab.
                 double effectiveIceSpeedCap = Math.max(iceSpeedCap, grabIceSpeedCap);
-                double speedCap = (effectiveIceSpeedCap > 0.0) ? effectiveIceSpeedCap : effMaxSpd;
+                double speedCap = vanillaIce ? effMaxSpd
+                                : (effectiveIceSpeedCap > 0.0) ? effectiveIceSpeedCap : effMaxSpd;
                 double hl       = Math.sqrt(nx * nx + nz * nz);
                 if (hl > speedCap) {
                     double f = speedCap / hl;
