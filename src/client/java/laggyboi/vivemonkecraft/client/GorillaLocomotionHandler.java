@@ -1605,6 +1605,43 @@ public class GorillaLocomotionHandler {
         return best;
     }
 
+    // VANILLA ICE FRICTION (experimental) — per-tick horizontal momentum KEEP factor for
+    // a slippery surface, = the block's vanilla friction × 0.91 (ice ≈ 0.89, blue ice a
+    // touch higher). Returns -1 when the toggle is off or no icy block is in contact, so
+    // callers fall back to the mod's own ice handling. Checks the feet block and both
+    // grab points, so it works whether you're standing on OR gripping the ice.
+    private double vanillaIceKeep(Minecraft client, BlockPos feetPos, Vec3 grabMain, Vec3 grabOff) {
+        if (!MovementConfig.vanillaIceFriction || client.level == null) return -1.0;
+        double k = iceFrictionKeep(client, feetPos);
+        if (k > 0.0) return k;
+        k = iceFrictionKeepNear(client, grabMain);
+        if (k > 0.0) return k;
+        return iceFrictionKeepNear(client, grabOff);
+    }
+
+    private double iceFrictionKeep(Minecraft client, BlockPos pos) {
+        if (pos == null || client.level == null) return -1.0;
+        BlockState bs = client.level.getBlockState(pos);
+        if (!(bs.is(Blocks.ICE) || bs.is(Blocks.PACKED_ICE) || bs.is(Blocks.BLUE_ICE))) return -1.0;
+        return bs.getBlock().getFriction() * 0.91;
+    }
+
+    // Same probe pattern as iceNearMultiplier, but returns the vanilla keep factor of the
+    // first icy block found around the (face-clamped) grab point.
+    private double iceFrictionKeepNear(Minecraft client, Vec3 point) {
+        if (point == null || client.level == null) return -1.0;
+        double d = 0.06;
+        double[][] probes = {
+            {0, 0, 0}, {d, 0, 0}, {-d, 0, 0}, {0, d, 0}, {0, -d, 0}, {0, 0, d}, {0, 0, -d}
+        };
+        for (double[] o : probes) {
+            double k = iceFrictionKeep(client,
+                    BlockPos.containing(point.x + o[0], point.y + o[1], point.z + o[2]));
+            if (k > 0.0) return k;
+        }
+        return -1.0;
+    }
+
     // -----------------------------------------------------------------------
     // HELPERS
     // -----------------------------------------------------------------------
