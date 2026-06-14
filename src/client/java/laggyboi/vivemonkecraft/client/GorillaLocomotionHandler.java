@@ -195,6 +195,7 @@ public class GorillaLocomotionHandler {
     // longer here than for a detected position jump. ~0.6 s.
     private static final int TELEPORT_SETTLE_TICKS = 12;
 
+
     // True this tick while actively sliding DOWN a wall (low-stick or ice). Drives
     // the yellow hand-marker tint. Reset at the start of every tick.
     private boolean wallSliding = false;
@@ -230,6 +231,7 @@ public class GorillaLocomotionHandler {
         if (vr.isTeleportAiming()) {
             onGuiPause(client);
             teleportCooldown = Math.max(teleportCooldown, TELEPORT_SETTLE_TICKS);
+            logState(client, "AIM", player);
             prevTickVel = player.getDeltaMovement();
             return;
         }
@@ -288,6 +290,10 @@ public class GorillaLocomotionHandler {
             // pushes don't register. Force the origin to re-sync to the entity each
             // settle tick so that, once the cooldown ends, everything lines up again.
             vr.snapRoomOriginToPlayer(player);
+            // Kill horizontal momentum through the settle so we exit it STATIONARY (no
+            // residual slide carrying out of the teleport). Vertical kept for gravity.
+            Vec3 tv = player.getDeltaMovement();
+            player.setDeltaMovement(0.0, tv.y, 0.0);
             // Keep grips DROPPED through the whole settle so the first grip after it is
             // computed fresh from the re-synced hand positions (no stale anchor → no
             // slide-in-place). wasGripping cleared too so grab-end logic can't fire.
@@ -303,6 +309,7 @@ public class GorillaLocomotionHandler {
             prevOffOffsetMining  = null;
             HandMarkerRenderer.clearState();
         VrHandClamp.clear();
+            logState(client, "SETTLE", player);
             prevTickVel = player.getDeltaMovement();
             return;
         }
@@ -901,6 +908,9 @@ public class GorillaLocomotionHandler {
                 (handHitMain != null) ? handHitMain : hitMain, mainHand.gripping,
                 (handHitOff  != null) ? handHitOff  : hitOff,  offHand.gripping);
 
+        // Comprehensive per-tick trace: one line of full state every tick the mod runs.
+        logState(client, "TICK", player);
+
         // Record the velocity we are handing to the engine this tick — next tick's
         // teleport detection compares actual movement against this expectation.
         prevTickVel = player.getDeltaMovement();
@@ -1491,6 +1501,50 @@ public class GorillaLocomotionHandler {
             var sp = server.getPlayerList().getPlayer(id);
             if (sp != null) sp.resetFallDistance();
         });
+    }
+
+    // One comprehensive per-tick state line (no-op unless debug logging is on). Covers
+    // everything the mod is doing this tick: physics mode, teleport state, player vs VR
+    // head position (hOff = the desync signal), per-hand grip kind, velocity, and ground/
+    // ice/gravity flags. Phase tags the moment: TICK (normal), AIM/SETTLE (teleport).
+    private void logState(Minecraft client, String phase, LocalPlayer player) {
+        if (!MovementConfig.debugLogging) return;
+        Vec3 pp = player.position();
+        Vec3 hp = vr.getHeadPos();
+        Vec3 v  = player.getDeltaMovement();
+        double hOff = (hp == null) ? -1.0
+                : Math.sqrt((hp.x - pp.x) * (hp.x - pp.x) + (hp.z - pp.z) * (hp.z - pp.z));
+        boolean onIce = client.level != null && iceBlockMultiplier(client,
+                BlockPos.containing(pp.x, player.getBoundingBox().minY - 0.1, pp.z)) > 0.0;
+        VmcDebugLog.log(String.format(
+            "%-6s mode=%s aim=%-5s cd=%-2d player=(%.2f,%.2f,%.2f) head=%s hOff=%.2f grip=%s/%s vel=(%.3f,%.3f,%.3f) ground=%b ice=%b noGrav=%b",
+            phase, MovementConfig.gtPhysics ? "GT" : "LEG", vr.isTeleportAiming(), teleportCooldown,
+            pp.x, pp.y, pp.z,
+            (hp == null ? "null" : String.format("(%.2f,%.2f,%.2f)", hp.x, hp.y, hp.z)),
+            hOff, gripStr(mainHand), gripStr(offHand), v.x, v.y, v.z,
+            player.onGround(), onIce, noGravSet));
+    }
+
+    // Compact per-hand grip descriptor for the state line: "-" free, "F" floor, "W" wall.
+    private static String gripStr(HandState h) {
+        return !h.gripping ? "-" : (h.floorGrip ? "F" : "W");
+    }
+
+    // Last-logged grip state, so we emit a GRIP event only on a change.
+    private boolean loggedGripM = false, loggedGripO = false;
+
+    private void logGripChanges() {
+        if (!VmcDebugLog.on()) return;
+        if (mainHand.gripping != loggedGripM) {
+            VmcDebugLog.event("GRIP", "main " + (mainHand.gripping
+                    ? "grab " + (mainHand.floorGrip ? "FLOOR" : "WALL") : "release"));
+            loggedGripM = mainHand.gripping;
+        }
+        if (offHand.gripping != loggedGripO) {
+            VmcDebugLog.event("GRIP", "off " + (offHand.gripping
+                    ? "grab " + (offHand.floorGrip ? "FLOOR" : "WALL") : "release"));
+            loggedGripO = offHand.gripping;
+        }
     }
 
     // Whether we gripped this tick (climbing or sliding) — the no-fall-damage state.
