@@ -19,7 +19,7 @@ optional server companion unlocks it (and lets admins cap it) on dedicated serve
 | Optional | Mod Menu + Cloth Config (in-game settings screen) |
 | Optional | **ViveMonke server mod** (`monke-server`) — only for **dedicated** servers |
 
-The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft active.
+The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft active Execpt show you're friends without legs.
 
 ---
 
