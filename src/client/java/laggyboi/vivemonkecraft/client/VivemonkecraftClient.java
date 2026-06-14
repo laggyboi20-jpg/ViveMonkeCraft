@@ -164,6 +164,8 @@ public class VivemonkecraftClient implements ClientModInitializer {
                 ServerConfigPayload.ID,
                 (payload, context) -> {
                     ServerLimits.apply(payload);
+                    VmcDebugLog.event("NET", "← ServerConfig modEnabled=" + payload.modEnabled()
+                            + " (server companion present → authorized)");
 
                     context.client().execute(() -> {
                         if (!payload.modEnabled()) {
