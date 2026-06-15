@@ -382,6 +382,15 @@ public class ModMenuIntegration implements ModMenuApi {
         //Experimental page For Experimental stuff
         ConfigCategory Experimental = builder.getOrCreateCategory(Component.literal("Experimental"));
 
+        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Allow Vivecraft teleport"), MovementConfig.allowTeleport)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("OFF (default): teleport is disabled while gorilla locomotion is on,"),
+                        Component.literal("because teleporting desyncs the room origin and breaks hand physics."),
+                        Component.literal("ON: keep teleport usable anyway (you accept the post-teleport jank)."),
+                        Component.literal("Teleport always works when the mod is OFF."))
+                .setSaveConsumer(v -> MovementConfig.allowTeleport = v).build());
+
         Experimental.addEntry(eb.startBooleanToggle(Component.literal("Ice floor = ice wall (experimental)"), MovementConfig.iceFloorWallLogic)
                 .setDefaultValue(false)
                 .setTooltip(
