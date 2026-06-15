@@ -273,6 +273,18 @@ public final class MovementConfig {
     // ice-WALL push-off is unchanged (legs have no wall analog). true/false.
     public static boolean vanillaIceFriction = false;
 
+    // DEBUG LOGGING: when on, writes a focused trace of Vivecraft↔ViveMonkeCraft
+    // interactions (teleport aim, room-origin re-sync, head-vs-body desync, grip state)
+    // to logs/vivemonkecraft-debug.log. For diagnosing VR-only issues. true/false.
+    public static boolean debugLogging = false;
+
+    // ALLOW VIVECRAFT TELEPORT: by default the mod DISABLES Vivecraft's teleport while
+    // gorilla locomotion is on, because teleporting desyncs the room origin and breaks
+    // the hand physics. Turn this ON to keep teleport usable anyway (you accept the
+    // post-teleport jank). When the mod is OFF, teleport always works regardless.
+    // true/false.
+    public static boolean allowTeleport = false;
+
 
     // NOTE: presets live in ModMenuIntegration (the Mod Menu config screen) — the
     // old in-class preset system was unused and has been removed.
