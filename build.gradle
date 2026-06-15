@@ -27,7 +27,11 @@ repositories {
     maven { url "https://maven.terraformersmc.com/releases/" }
     // Cloth Config (the slider/toggle widgets used to build the config screen)
     maven { url "https://maven.shedaniel.me/" }
-}
+    //vrapi-3.0.12-1.21.4-fabric
+    maven {
+         url = "https://cursemaven.com"
+         }
+    }
 
 dependencies {
     // To change the versions see the gradle.properties file
