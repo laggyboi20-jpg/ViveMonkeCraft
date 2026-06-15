@@ -47,7 +47,10 @@ public final class VivecraftBridge {
      * desync the room origin and break our physics. No-op if Vivecraft is absent.
      */
     public static void setTeleportDisabled(boolean disabled) {
-        INSTANCE.setTeleportOverride(disabled);
+        // POLARITY: the debug read-back proved teleportOverride is effectively "teleport
+        // ENABLED" — isTeleportEnabled() tracks it (override=true → on, false → off).
+        // So to DISABLE teleport we must pass FALSE, and to allow it, TRUE.
+        INSTANCE.setTeleportOverride(!disabled);
     }
 
     // -----------------------------------------------------------------------
