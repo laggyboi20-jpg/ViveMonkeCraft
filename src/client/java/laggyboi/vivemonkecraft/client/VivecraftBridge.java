@@ -185,7 +185,13 @@ public final class VivecraftBridge {
     private boolean tpoBroken = false;
     private Method  mSetTeleportOverride; // VRPlayer#setTeleportOverride(boolean)
 
-    /** Calls VRPlayer.setTeleportOverride(override); never throws. */
+    /**
+     * Set Vivecraft's teleport override and IMMEDIATELY re-apply it. Setting the flag
+     * alone does nothing live — Vivecraft only pushes isTeleportEnabled() onto the
+     * teleport input actions inside updateTeleportKeys(), which normally runs only at
+     * init/settings-change. updateTeleportKeys() just calls setEnabled() on the two
+     * teleport actions (no side effects), so we call it here to make the change stick.
+     */
     public void setTeleportOverride(boolean override) {
         if (tpoBroken || tryWire() != Link.LEGACY) return;
         try {
