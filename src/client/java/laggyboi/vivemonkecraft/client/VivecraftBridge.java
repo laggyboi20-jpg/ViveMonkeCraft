@@ -207,7 +207,19 @@ public final class VivecraftBridge {
                 VmcDebugLog.event("VR", "teleport-override reflection wired OK");
             }
             Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
-            if (vp != null) mSetTeleportOverride.invoke(vp, override);
+            if (vp == null) {
+                if (!Boolean.FALSE.equals(tpoLast)) VmcDebugLog.event("VR", "setTeleportOverride: VRPlayer.get() null");
+                return;
+            }
+            mSetTeleportOverride.invoke(vp, override);
+            mUpdateTeleportKeys.invoke(vp);   // re-apply to the input actions NOW
+            // Log only when the value changes, with a read-back proving it took effect.
+            if (tpoLast == null || tpoLast != override) {
+                tpoLast = override;
+                Object enabledNow = mIsTeleportEnabled.invoke(vp);
+                VmcDebugLog.event("VR", "setTeleportOverride(" + override
+                        + ") applied → isTeleportEnabled=" + enabledNow);
+            }
         } catch (Throwable t) {
             tpoBroken = true;
         }
