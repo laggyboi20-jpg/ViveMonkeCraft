@@ -919,7 +919,8 @@ public class GorillaLocomotionHandler {
                 (handHitMain != null) ? handHitMain : hitMain, mainHand.gripping,
                 (handHitOff  != null) ? handHitOff  : hitOff,  offHand.gripping);
 
-        // Comprehensive per-tick trace: one line of full state every tick the mod runs.
+        // Comprehensive per-tick trace: grip transitions + one line of full state.
+        logGripChanges();
         logState(client, "TICK", player);
 
         // Record the velocity we are handing to the engine this tick — next tick's
