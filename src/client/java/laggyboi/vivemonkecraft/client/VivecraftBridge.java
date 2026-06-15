@@ -147,6 +147,7 @@ public final class VivecraftBridge {
             return (aiming instanceof Boolean) && (Boolean) aiming;
         } catch (Throwable t) {
             tpBroken = true;
+            VmcDebugLog.log("isTeleportAiming FAILED: " + t);
             return false;
         }
     }
