@@ -222,6 +222,7 @@ public final class VivecraftBridge {
             }
         } catch (Throwable t) {
             tpoBroken = true;
+            VmcDebugLog.event("VR", "setTeleportOverride FAILED: " + t);
         }
     }
 
