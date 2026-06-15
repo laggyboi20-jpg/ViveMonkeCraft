@@ -361,7 +361,7 @@ public final class MovementConfig {
         magmaTouchDamage    = true;
         vanillaIceFriction  = false;
         debugLogging        = false;
-        allowTeleport       = false;
+        allowTeleport       = false
     }
 
     // Reads the file into the fields above. Safe to call repeatedly. Never throws.
