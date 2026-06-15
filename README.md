@@ -170,8 +170,8 @@ texts are in the [`third party license/`](third%20party%20license) folder.
 | Kerestell Smith — [Another-Axiom/GorillaLocomotion](https://github.com/Another-Axiom/GorillaLocomotion) | MIT |
 | unbaswastaken — [gorillalocomotion-VR-MINECRAFT](https://github.com/unbaswastaken/gorillalocomotion-VR-MINECRAFT) | MIT |
 | Vivecraft team — [VivecraftMod](https://github.com/Vivecraft/VivecraftMod) | LGPLv3 |
-| LaggyBoi | — |
-| Claude Code | — |
+| LaggyBoi | Dev |
+| Claude Code | Dev |
 
 **Vivecraft** is **LGPLv3** and is accessed at runtime via reflection only — it is
 **not bundled or modified** by this mod; players supply their own Vivecraft/QuestCraft.
