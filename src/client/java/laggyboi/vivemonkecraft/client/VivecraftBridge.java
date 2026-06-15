@@ -202,6 +202,9 @@ public final class VivecraftBridge {
                 tpoTried = true;
                 Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
                 mSetTeleportOverride = vrPlayer.getMethod("setTeleportOverride", boolean.class);
+                mUpdateTeleportKeys  = vrPlayer.getMethod("updateTeleportKeys");
+                mIsTeleportEnabled   = vrPlayer.getMethod("isTeleportEnabled");
+                VmcDebugLog.event("VR", "teleport-override reflection wired OK");
             }
             Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
             if (vp != null) mSetTeleportOverride.invoke(vp, override);
