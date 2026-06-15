@@ -177,6 +177,7 @@ public final class VivecraftBridge {
             else VmcDebugLog.log("snapRoomOriginToPlayer: VRPlayer.get() returned null");
         } catch (Throwable t) {
             snapBroken = true;
+            VmcDebugLog.log("snapRoomOriginToPlayer FAILED: " + t);
         }
     }
 
