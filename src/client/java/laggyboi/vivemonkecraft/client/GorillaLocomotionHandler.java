@@ -1037,6 +1037,7 @@ public class GorillaLocomotionHandler {
     // Fire resistance negates it automatically (hot-floor is a fire damage type), and
     // vanilla hurt invulnerability frames throttle the cadence to match standing on it.
     private boolean touchingMagmaThisTick = false;
+    private boolean loggedMagma = false;   // edge state for the MAGMA debug event
 
     private void processMagmaTouch(Minecraft client, LocalPlayer player,
                                    BlockHitResult hitMain, boolean mainGrip,
@@ -1046,8 +1047,15 @@ public class GorillaLocomotionHandler {
 
         boolean magma = (mainGrip && isMagma(client, hitMain))
                      || (offGrip  && isMagma(client, hitOff));
-        if (!magma) return;
+        if (!magma) {
+            if (loggedMagma) { VmcDebugLog.event("MAGMA", "off magma"); loggedMagma = false; }
+            return;
+        }
         touchingMagmaThisTick = true;
+        if (VmcDebugLog.on() && !loggedMagma) {
+            VmcDebugLog.event("MAGMA", "hand on magma → hot-floor damage");
+            loggedMagma = true;
+        }
 
         if (client.hasSingleplayerServer()) {
             var server = client.getSingleplayerServer();
@@ -1076,6 +1084,7 @@ public class GorillaLocomotionHandler {
     private void stopMining(Minecraft client) {
         if (miningPos != null) {
             if (client != null && client.gameMode != null) client.gameMode.stopDestroyBlock();
+            if (VmcDebugLog.on()) VmcDebugLog.event("MINE", "stop " + miningPos);
             miningPos = null;
         }
         miningGrace = 0;
