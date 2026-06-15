@@ -301,10 +301,12 @@ public class GorillaLocomotionHandler {
             // pushes don't register. Force the origin to re-sync to the entity each
             // settle tick so that, once the cooldown ends, everything lines up again.
             vr.snapRoomOriginToPlayer(player);
-            // Kill horizontal momentum through the settle so we exit it STATIONARY (no
-            // residual slide carrying out of the teleport). Vertical kept for gravity.
-            Vec3 tv = player.getDeltaMovement();
-            player.setDeltaMovement(0.0, tv.y, 0.0);
+            // NOTE: we deliberately DON'T touch velocity here. An earlier version zeroed
+            // horizontal velocity (keeping vertical) to stop a post-teleport slide — but
+            // that asymmetry wiped your sideways momentum while preserving upward motion,
+            // so you could only launch "straight up" after a teleport. The room-origin
+            // re-sync above already fixes the slide (it was a desync, not real velocity),
+            // so we leave momentum intact and you keep your sideways speed.
             // Keep grips DROPPED through the whole settle so the first grip after it is
             // computed fresh from the re-synced hand positions (no stale anchor → no
             // slide-in-place). wasGripping cleared too so grab-end logic can't fire.
