@@ -995,6 +995,8 @@ public class GorillaLocomotionHandler {
                 if (miningPos != null) gm.stopDestroyBlock();
                 gm.startDestroyBlock(pos, face);  // instant-breaks soft/creative blocks
                 miningPos = pos;
+                if (VmcDebugLog.on()) VmcDebugLog.event("MINE",
+                        "start " + pos + " " + client.level.getBlockState(pos).getBlock());
             }
             player.swing(InteractionHand.MAIN_HAND);
             miningGrace = MINING_GRACE;            // refresh the hold window
