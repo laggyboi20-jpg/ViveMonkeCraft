@@ -218,6 +218,17 @@ public class GorillaLocomotionHandler {
         if (player == null || client.level == null) return;
         if (!vr.isVRActive()) return;
 
+        // ELYTRA / VEHICLE GUARD: gorilla locomotion must not fight vanilla movement
+        // that the engine owns. While elytra-gliding it would inject hand velocity on
+        // top of flight and rocket you off; while riding a horse/minecart/boat the
+        // player isn't the thing moving. In both cases go fully inert (drop grips,
+        // restore gravity) and let vanilla drive — resumes the moment you land / dismount.
+        if (player.isFallFlying() || player.isPassenger()) {
+            onGuiPause(client);
+            prevTickVel = player.getDeltaMovement();
+            return;
+        }
+
         // TELEPORT-AIM GUARD: while the teleport button is held, Vivecraft freezes the
         // hand/room pose. If we kept processing we'd anchor to the stale hand and slide
         // in place. Go fully inert (drop grips, stop mining, restore gravity).
