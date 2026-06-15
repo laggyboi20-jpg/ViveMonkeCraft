@@ -163,7 +163,7 @@ and builds the same way.
 This project's own code is **MIT** — see [LICENSE](LICENSE). Full upstream license
 texts are in the [`third party license/`](third%20party%20license) folder.
 
-**Credits for the open-sourced code and the idea (MIT and LGPLv3):**
+**Credits for the open-sourced code (MIT and LGPLv3):**
 
 | Source | License |
 |---|---|
