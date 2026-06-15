@@ -184,6 +184,9 @@ public final class VivecraftBridge {
     private boolean tpoTried  = false;
     private boolean tpoBroken = false;
     private Method  mSetTeleportOverride; // VRPlayer#setTeleportOverride(boolean)
+    private Method  mUpdateTeleportKeys;  // VRPlayer#updateTeleportKeys()
+    private Method  mIsTeleportEnabled;   // VRPlayer#isTeleportEnabled()
+    private Boolean tpoLast = null;       // last override value, for change-only logging
 
     /**
      * Set Vivecraft's teleport override and IMMEDIATELY re-apply it. Setting the flag
