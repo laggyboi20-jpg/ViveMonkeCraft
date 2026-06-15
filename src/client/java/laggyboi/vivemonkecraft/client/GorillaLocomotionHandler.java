@@ -362,8 +362,20 @@ public class GorillaLocomotionHandler {
         double headDx = headPos.x - curPlayerPos.x;
         double headDy = headPos.y - curPlayerPos.y;
         double headDz = headPos.z - curPlayerPos.z;
-        if (Math.sqrt(headDx * headDx + headDz * headDz) > VR_DESYNC_DIST
-                || headDy < -0.5 || headDy > 3.5) {
+        // FAST-MOVE EXEMPTION: when we're flinging the body fast under our own power,
+        // Vivecraft's room origin lags the moving body, so the head legitimately drifts
+        // far behind for a few ticks — that's NOT a teleport desync. A real teleport
+        // desync happens with ~zero horizontal velocity (the body jumped without us
+        // moving it). So skip the guard while horizontal self-speed is high, otherwise
+        // big throws hitch as the guard falsely trips and goes inert mid-flight.
+        double selfSpeedH = Math.sqrt(prevTickVel.x * prevTickVel.x + prevTickVel.z * prevTickVel.z);
+        boolean fastSelfMove = selfSpeedH > 0.2;
+        if (!fastSelfMove
+                && (Math.sqrt(headDx * headDx + headDz * headDz) > VR_DESYNC_DIST
+                || headDy < -0.5 || headDy > 3.5)) {
+            if (VmcDebugLog.on()) VmcDebugLog.event("VR", String.format(
+                    "desync guard fired (head off body: horiz=%.2f dy=%.2f) → inert this tick",
+                    Math.sqrt(headDx * headDx + headDz * headDz), headDy));
             mainHand.release();
             offHand.release();
             mainHand.wasGripping = false;
