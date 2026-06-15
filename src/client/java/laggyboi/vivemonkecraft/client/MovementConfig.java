@@ -360,6 +360,8 @@ public final class MovementConfig {
         punchMiningNoTool   = false;
         magmaTouchDamage    = true;
         vanillaIceFriction  = false;
+        debugLogging        = false;
+        allowTeleport       = false;
     }
 
     // Reads the file into the fields above. Safe to call repeatedly. Never throws.
@@ -423,6 +425,8 @@ public final class MovementConfig {
                     punchMiningNoTool   = parseB(p, "punchMiningNoTool",   punchMiningNoTool);
                     magmaTouchDamage    = parseB(p, "magmaTouchDamage",    magmaTouchDamage);
                     vanillaIceFriction  = parseB(p, "vanillaIceFriction",  vanillaIceFriction);
+                    debugLogging        = parseB(p, "debugLogging",        debugLogging);
+                    allowTeleport       = parseB(p, "allowTeleport",       allowTeleport);
                     clampHandModels     = parseB(p, "clampHandModels",     clampHandModels);
                 }
             } else {
