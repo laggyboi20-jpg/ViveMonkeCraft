@@ -137,6 +137,7 @@ public final class VivecraftBridge {
                 fTeleportTracker       = dh.getField("teleportTracker");
                 Class<?> tt = Class.forName("org.vivecraft.client_vr.gameplay.trackers.TeleportTracker");
                 mIsAiming = tt.getMethod("isAiming");
+                VmcDebugLog.log("isTeleportAiming wired OK");
             }
             Object holder = mDataHolderGetInstance.invoke(null);
             if (holder == null) return false;
