@@ -345,11 +345,9 @@ public class VivemonkecraftClient implements ClientModInitializer {
             vrWasActive = vrActive;
         }
 
-        // While the mod is on, disable Vivecraft's teleport (a free-locomotion mod
-        // doesn't use it, and the teleport button desyncs the room origin and breaks
-        // our physics). Restored automatically when the mod turns off. Enforced every
-        // tick so it survives Vivecraft re-initialising on respawn/dimension change.
-        VivecraftBridge.setTeleportDisabled(enabled);
+        // (Teleport is blocked directly in TeleportTrackerMixin by cancelling its
+        // doProcess while the mod is on and allowTeleport is off — the setTeleportOverride
+        // route proved unreliable, isTeleportEnabled ignored it on QuestCraft.)
 
         // Toggle on each press of the keybind (keyboard or Vivecraft radial menu).
         while (toggleKey.consumeClick()) {
