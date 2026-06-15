@@ -17,7 +17,7 @@ optional server companion unlocks it (and lets admins cap it) on dedicated serve
 | API | Fabric API |
 | VR | QuestCraft / Vivecraft 1.2.x |
 | Optional | Mod Menu + Cloth Config (in-game settings screen) |
-| Optional | **ViveMonke server mod** (`monke-server`) — only for **dedicated** servers |
+| Optional | **ViveMonke server mod** (`monke-server`) only for **dedicated** servers |
 
 The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft active Execpt show you're friends without legs.
 
@@ -33,30 +33,30 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
 - **Reach extension** — "gorilla arms" let you touch the ground from standing height
   without physically reaching; your real swing is still measured 1:1 so movement
   never feels twitchy.
-- **Climbing & wall behaviour** — cling and climb walls, or set them to slide; a
+- **Climbing & wall behaviour**-cling and climb walls, or set them to slide; a
   slide ramps in over ~½ second so quick pushes keep their momentum but you can't
   hover one-handed.
-- **Floor / ground friction & air drag** — fully tunable, from sticky to ice-rink.
-- **Gravity multiplier** — from normal all the way to zero-G floating.
-- **Step assist** — clear ledges while moving: either an upward boost or an instant
+- **Floor / ground friction & air drag**-fully tunable, from sticky to ice-rink.
+- **Gravity multiplier**-from normal all the way to zero-G floating.
+- **Step assist**-clear ledges while moving: either an upward boost or an instant
   **step-teleport** onto the block (configurable).
 - **Two physics modes:**
-  - **Speed-based (default, stable)** — body velocity follows your swing speed.
-  - **GT-Physics (Beta)** — a faithful port of the official GorillaLocomotion
+  - **Speed-based (default, stable)**-body velocity follows your swing speed.
+  - **GT-Physics (Beta)**-a faithful port of the official GorillaLocomotion
     `Player.cs` anchor algorithm: hands plant in world space and your body is dragged
     to keep them there, with configurable drag gain, push strength, unstick distance,
     and ice slip.
 
 ## Ice
 
-- Ice is slippery on **every** face — push off ice walls for momentum, but you can't
+- Ice is slippery on **every** face-push off ice walls for momentum, but you can't
   cling or climb them.
 - Tunable ice speed multiplier kept low for Quest performance.
 - **Experimental:** make ice *floors* behave like ice *walls* (pure push-off, no glue).
 
 ## Gorilla body ("Real Monke" & Monke Model)
 
-- **Real Monke** — shrinks your collision box to half height (0.5 blocks) so you fit
+- **Real Monke**-shrinks your collision box to half height (0.5 blocks) so you fit
   through **1-block tunnels**. Collision-only: your model, width, reach and camera
   scale stay normal. Enforced on both client and server so you don't get rubber-banded.
 - **Monke Model** — render players **without legs** and with a shortened, tunable
