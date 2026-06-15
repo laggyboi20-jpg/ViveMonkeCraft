@@ -627,7 +627,11 @@ public final class MovementConfig {
             sb.append("# Grabbing a magma block (any face) hurts you like standing on it. true/false.\n");
             sb.append("magmaTouchDamage=").append(magmaTouchDamage).append("\n\n");
             sb.append("# EXPERIMENTAL - vanilla ice friction on hands/feet (skate physics). true/false.\n");
-            sb.append("vanillaIceFriction=").append(vanillaIceFriction).append("\n");
+            sb.append("vanillaIceFriction=").append(vanillaIceFriction).append("\n\n");
+            sb.append("# Write a focused Vivecraft-interaction trace to logs/vivemonkecraft-debug.log. true/false.\n");
+            sb.append("debugLogging=").append(debugLogging).append("\n\n");
+            sb.append("# Keep Vivecraft teleport usable while the mod is on (it desyncs physics). true/false.\n");
+            sb.append("allowTeleport=").append(allowTeleport).append("\n");
 
             Files.writeString(path, sb.toString());
         } catch (Exception e) {
