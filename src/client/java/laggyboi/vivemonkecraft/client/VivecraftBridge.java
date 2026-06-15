@@ -170,6 +170,7 @@ public final class VivecraftBridge {
                 Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
                 mSnapOrigin = vrPlayer.getMethod("snapRoomOriginToPlayerEntity",
                         net.minecraft.world.entity.Entity.class, boolean.class, boolean.class);
+                VmcDebugLog.log("snapRoomOriginToPlayer wired OK");
             }
             Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
             if (vp != null) mSnapOrigin.invoke(vp, player, false, true);
