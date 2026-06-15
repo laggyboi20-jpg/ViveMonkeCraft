@@ -174,6 +174,7 @@ public final class VivecraftBridge {
             }
             Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
             if (vp != null) mSnapOrigin.invoke(vp, player, false, true);
+            else VmcDebugLog.log("snapRoomOriginToPlayer: VRPlayer.get() returned null");
         } catch (Throwable t) {
             snapBroken = true;
         }
