@@ -264,6 +264,9 @@ public class GorillaLocomotionHandler {
         if (prevPlayerPos != null
                 && curPlayerPos.distanceTo(prevPlayerPos)
                        > prevTickVel.length() + TELEPORT_SLACK) {
+            if (VmcDebugLog.on()) VmcDebugLog.event("TP", String.format(
+                    "position jump %.2f blocks (expected ≤%.2f) → teleport detected, settling",
+                    curPlayerPos.distanceTo(prevPlayerPos), prevTickVel.length() + TELEPORT_SLACK));
             // Full reset. release() also clears floorGrip/prevOffset; we additionally
             // clear wasGripping so the post-teleport tick can't fire grab-end logic.
             mainHand.release();
