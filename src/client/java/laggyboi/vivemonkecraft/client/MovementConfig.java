@@ -355,9 +355,9 @@ public final class MovementConfig {
         realMonke           = true;
         modelTorsoPitch     = -120.0;
         gtPhysics           = false;
-        punchMining         = false;
-        punchMiningThreshold = 0.08;
-        punchMiningNoTool   = false;
+        punchMining         = true;
+        punchMiningThreshold = 0.04;
+        punchMiningNoTool   = true;
         magmaTouchDamage    = true;
         vanillaIceFriction  = false;
         debugLogging        = false;
