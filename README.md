@@ -23,6 +23,12 @@ The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft a
 
 ---
 
+#  Server Control 
+
+#### The companion server mod lets admins fully **disable** the mod, set **hard speed caps** (enforced server-side), choose which **op level** bypasses limits, and **raise the allowed limits** for everyone (push strength, reach, gravity, etc.). Players without cheats/operator access are otherwise clamped to safe defaults, so editing the config can't gain an unfair edge.
+
+---
+
 ## Locomotion
 
 - **Hand-grab swinging**: when a hand touches a block it anchors there; moving that
