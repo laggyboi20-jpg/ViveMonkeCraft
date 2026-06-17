@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -16,8 +16,8 @@ import org.lwjgl.glfw.GLFW;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 
 // This is the CLIENT entry point — Minecraft calls onInitializeClient() once when
 // the mod loads. We set up: the toggle keybind, a /vmc chat command, and the tick.
@@ -85,7 +85,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
     // To toggle via Vivecraft radial menu: go to VR Settings -> Radial Menu and assign
     // the "ViveMonkeCraft: Toggle" keybind to a radial slot.
     // To toggle via keyboard: rebind in Options -> Controls -> Miscellaneous.
-    private final KeyMapping toggleKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+    private final KeyMapping toggleKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.vivemonkecraft.toggle",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_UNKNOWN,
@@ -109,13 +109,13 @@ public class VivemonkecraftClient implements ClientModInitializer {
 
         // Register the S2C payload type so Fabric can decode incoming server packets.
         // This must happen during init (before any world joins).
-        PayloadTypeRegistry.playS2C().register(
+        PayloadTypeRegistry.clientboundPlay().register(
                 ServerConfigPayload.ID,
                 ServerConfigPayload.STREAM_CODEC
         );
 
         // Real Monke: C2S request asking monke-server to shrink our hitbox height.
-        PayloadTypeRegistry.playC2S().register(
+        PayloadTypeRegistry.serverboundPlay().register(
                 RealMonkeC2SPayload.ID,
                 RealMonkeC2SPayload.STREAM_CODEC
         );
@@ -124,7 +124,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         // our (server-authoritative) fall distance — the dedicated-server half of the
         // no-fall-damage slide. Singleplayer/LAN host handles this in the handler by
         // resetting the integrated server player directly, so the packet is dedicated-only.
-        PayloadTypeRegistry.playC2S().register(
+        PayloadTypeRegistry.serverboundPlay().register(
                 WallSlideC2SPayload.ID,
                 WallSlideC2SPayload.STREAM_CODEC
         );
@@ -132,18 +132,18 @@ public class VivemonkecraftClient implements ClientModInitializer {
         // Magma touch: C2S signal telling monke-server to apply hot-floor damage while
         // a hand grips a magma block (server-authoritative, so dedicated-only — singleplayer
         // hurts the integrated server player directly in the handler).
-        PayloadTypeRegistry.playC2S().register(
+        PayloadTypeRegistry.serverboundPlay().register(
                 MagmaTouchC2SPayload.ID,
                 MagmaTouchC2SPayload.STREAM_CODEC
         );
 
         // Monke model sync: we announce our legless look (C2S) and receive
         // everyone else's (S2C broadcast from monke-server).
-        PayloadTypeRegistry.playC2S().register(
+        PayloadTypeRegistry.serverboundPlay().register(
                 MonkeModelC2SPayload.ID,
                 MonkeModelC2SPayload.STREAM_CODEC
         );
-        PayloadTypeRegistry.playS2C().register(
+        PayloadTypeRegistry.clientboundPlay().register(
                 MonkeModelS2CPayload.ID,
                 MonkeModelS2CPayload.STREAM_CODEC
         );
@@ -322,11 +322,13 @@ public class VivemonkecraftClient implements ClientModInitializer {
                 // headset). Here we only warn once if the server hasn't opted in.
                 if (!serverAuthorized(client) && !warnedNoServerMod) {
                     warnedNoServerMod = true;
-                    client.player.displayClientMessage(Component.literal(
+                    // 26.1 removed Player.displayClientMessage(Component, boolean);
+                    // sendSystemMessage(Component) is the chat-message equivalent (the old
+                    // boolean=false meant "chat, not action bar").
+                    client.player.sendSystemMessage(Component.literal(
                         "§e[ViveMonkeCraft] §cThis server doesn't run the monke-server "
                         + "companion mod, so gorilla locomotion is disabled here. "
-                        + "§7(Server admins: install the ViveMonke server mod to allow it.)"),
-                        false);
+                        + "§7(Server admins: install the ViveMonke server mod to allow it.)"));
                 }
             }
         }
