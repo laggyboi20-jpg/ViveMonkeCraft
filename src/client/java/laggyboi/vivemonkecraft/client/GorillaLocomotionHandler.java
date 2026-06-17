@@ -195,6 +195,7 @@ public class GorillaLocomotionHandler {
     // longer here than for a detected position jump. ~0.6 s.
     private static final int TELEPORT_SETTLE_TICKS = 12;
 
+
     // True this tick while actively sliding DOWN a wall (low-stick or ice). Drives
     // the yellow hand-marker tint. Reset at the start of every tick.
     private boolean wallSliding = false;
@@ -217,6 +218,17 @@ public class GorillaLocomotionHandler {
         if (player == null || client.level == null) return;
         if (!vr.isVRActive()) return;
 
+        // ELYTRA / VEHICLE GUARD: gorilla locomotion must not fight vanilla movement
+        // that the engine owns. While elytra-gliding it would inject hand velocity on
+        // top of flight and rocket you off; while riding a horse/minecart/boat the
+        // player isn't the thing moving. In both cases go fully inert (drop grips,
+        // restore gravity) and let vanilla drive — resumes the moment you land / dismount.
+        if (player.isFallFlying() || player.isPassenger()) {
+            onGuiPause(client);
+            prevTickVel = player.getDeltaMovement();
+            return;
+        }
+
         // TELEPORT-AIM GUARD: while the teleport button is held, Vivecraft freezes the
         // hand/room pose. If we kept processing we'd anchor to the stale hand and slide
         // in place. Go fully inert (drop grips, stop mining, restore gravity).
@@ -230,6 +242,7 @@ public class GorillaLocomotionHandler {
         if (vr.isTeleportAiming()) {
             onGuiPause(client);
             teleportCooldown = Math.max(teleportCooldown, TELEPORT_SETTLE_TICKS);
+            logState(client, "AIM", player);
             prevTickVel = player.getDeltaMovement();
             return;
         }
@@ -251,6 +264,9 @@ public class GorillaLocomotionHandler {
         if (prevPlayerPos != null
                 && curPlayerPos.distanceTo(prevPlayerPos)
                        > prevTickVel.length() + TELEPORT_SLACK) {
+            if (VmcDebugLog.on()) VmcDebugLog.event("TP", String.format(
+                    "position jump %.2f blocks (expected ≤%.2f) → teleport detected, settling",
+                    curPlayerPos.distanceTo(prevPlayerPos), prevTickVel.length() + TELEPORT_SLACK));
             // Full reset. release() also clears floorGrip/prevOffset; we additionally
             // clear wasGripping so the post-teleport tick can't fire grab-end logic.
             mainHand.release();
@@ -282,6 +298,18 @@ public class GorillaLocomotionHandler {
         // stale VR hand positions while Vivecraft re-syncs its room origin.
         if (teleportCooldown > 0) {
             teleportCooldown--;
+            // ROOT FIX for "teleport breaks physics": a Vivecraft teleport leaves the
+            // room origin behind the player entity, so our hand/head world positions are
+            // stale → grips anchor to the old spot and drag you (slide in place) or
+            // pushes don't register. Force the origin to re-sync to the entity each
+            // settle tick so that, once the cooldown ends, everything lines up again.
+            vr.snapRoomOriginToPlayer(player);
+            // NOTE: we deliberately DON'T touch velocity here. An earlier version zeroed
+            // horizontal velocity (keeping vertical) to stop a post-teleport slide — but
+            // that asymmetry wiped your sideways momentum while preserving upward motion,
+            // so you could only launch "straight up" after a teleport. The room-origin
+            // re-sync above already fixes the slide (it was a desync, not real velocity),
+            // so we leave momentum intact and you keep your sideways speed.
             // Keep grips DROPPED through the whole settle so the first grip after it is
             // computed fresh from the re-synced hand positions (no stale anchor → no
             // slide-in-place). wasGripping cleared too so grab-end logic can't fire.
@@ -297,6 +325,7 @@ public class GorillaLocomotionHandler {
             prevOffOffsetMining  = null;
             HandMarkerRenderer.clearState();
         VrHandClamp.clear();
+            logState(client, "SETTLE", player);
             prevTickVel = player.getDeltaMovement();
             return;
         }
@@ -338,8 +367,20 @@ public class GorillaLocomotionHandler {
         double headDx = headPos.x - curPlayerPos.x;
         double headDy = headPos.y - curPlayerPos.y;
         double headDz = headPos.z - curPlayerPos.z;
-        if (Math.sqrt(headDx * headDx + headDz * headDz) > VR_DESYNC_DIST
-                || headDy < -0.5 || headDy > 3.5) {
+        // FAST-MOVE EXEMPTION: when we're flinging the body fast under our own power,
+        // Vivecraft's room origin lags the moving body, so the head legitimately drifts
+        // far behind for a few ticks — that's NOT a teleport desync. A real teleport
+        // desync happens with ~zero horizontal velocity (the body jumped without us
+        // moving it). So skip the guard while horizontal self-speed is high, otherwise
+        // big throws hitch as the guard falsely trips and goes inert mid-flight.
+        double selfSpeedH = Math.sqrt(prevTickVel.x * prevTickVel.x + prevTickVel.z * prevTickVel.z);
+        boolean fastSelfMove = selfSpeedH > 0.2;
+        if (!fastSelfMove
+                && (Math.sqrt(headDx * headDx + headDz * headDz) > VR_DESYNC_DIST
+                || headDy < -0.5 || headDy > 3.5)) {
+            if (VmcDebugLog.on()) VmcDebugLog.event("VR", String.format(
+                    "desync guard fired (head off body: horiz=%.2f dy=%.2f) → inert this tick",
+                    Math.sqrt(headDx * headDx + headDz * headDz), headDy));
             mainHand.release();
             offHand.release();
             mainHand.wasGripping = false;
@@ -558,6 +599,12 @@ public class GorillaLocomotionHandler {
         boolean grabOnIce       = grabIceMult > 0.0;
         double  grabIceSpeedCap = grabOnIce ? effMaxSpd * grabIceMult : 0.0;
 
+        // EXPERIMENTAL vanilla ice friction: keep factor of the icy floor/grab surface
+        // (block friction × 0.91). >0 means "skate with vanilla physics this tick" — the
+        // branches below then use this instead of the frictionless+capped ice handling.
+        double  iceKeepVanilla  = vanillaIceKeep(client, iceFeetPos, touchMain, touchOff);
+        boolean vanillaIce      = iceKeepVanilla > 0.0;
+
         // ---- APPLY ----
         if (anyGrip) {
             // While gripping (climbing OR sliding) you're in control — never take fall
@@ -580,7 +627,10 @@ public class GorillaLocomotionHandler {
             // the ice-WALL branch instead of the floor branch — gravity stays on,
             // no anchor glue, pure push-off momentum, exactly like an ice wall.
             // One line by design so it's trivial to remove after testing.
-            if (MovementConfig.iceFloorWallLogic && grabOnIce) wallGrip = true;
+            // ...but vanilla ice friction takes precedence: it WANTS ice floors handled as
+        // skating floors (momentum-preserving), not pushed into the wall branch which
+        // would replace your slide velocity with the swing and dead-stop you.
+        if (MovementConfig.iceFloorWallLogic && grabOnIce && !vanillaIce) wallGrip = true;
 
             if (wallGrip) {
 
@@ -643,7 +693,13 @@ public class GorillaLocomotionHandler {
                     // fresh re-grab and gravity is on the whole time).
                     double ny = (MovementConfig.iceFloorWallLogic && vel.y > 0.03)
                             ? vel.y : down;
-                    player.setDeltaMovement(vel.x, ny, vel.z);
+                    // Vanilla ice: KEEP horizontal momentum (block friction × 0.91) and
+                    // add the swing, so even a grab routed here skates instead of
+                    // dead-stopping. Otherwise horizontal = the swing (vanilla-off feel).
+                    Vec3   icw = player.getDeltaMovement();
+                    double nxw = vanillaIce ? vel.x + icw.x * iceKeepVanilla : vel.x;
+                    double nzw = vanillaIce ? vel.z + icw.z * iceKeepVanilla : vel.z;
+                    player.setDeltaMovement(nxw, ny, nzw);
                     if (ny < 0 && !player.onGround()) wallSliding = true;
                 } else {
                     // LOW-STICK WALL — the swing drives the body 1:1 with a downward
@@ -690,14 +746,20 @@ public class GorillaLocomotionHandler {
                 // (maxJumpSpeed × 0.4) so ice stays controllable on Quest hardware.
                 if (!noGravSet) { player.setNoGravity(true); noGravSet = true; }
                 // Merge feet-ice and grab-ice: ice is slippery from any contact face.
-                double keep = (onIce || grabOnIce) ? 1.0 : 1.0 - MovementConfig.floorStickiness;
+                // VANILLA ICE: keep = block friction × 0.91 (a slow decay → real skating),
+                // instead of the mod's keep=1.0 (never decays) on ice.
+                double keep = vanillaIce ? iceKeepVanilla
+                            : (onIce || grabOnIce) ? 1.0
+                            : 1.0 - MovementConfig.floorStickiness;
                 keep = Math.max(0.0, Math.min(1.0, keep));
                 Vec3   cur      = player.getDeltaMovement();
                 double nx       = vel.x + cur.x * keep;
                 double nz       = vel.z + cur.z * keep;
-                // Use the higher speed cap from either feet or grab.
+                // Use the higher speed cap from either feet or grab. Vanilla ice removes
+                // the artificial ice cap so momentum can build like real skating.
                 double effectiveIceSpeedCap = Math.max(iceSpeedCap, grabIceSpeedCap);
-                double speedCap = (effectiveIceSpeedCap > 0.0) ? effectiveIceSpeedCap : effMaxSpd;
+                double speedCap = vanillaIce ? effMaxSpd
+                                : (effectiveIceSpeedCap > 0.0) ? effectiveIceSpeedCap : effMaxSpd;
                 double hl       = Math.sqrt(nx * nx + nz * nz);
                 if (hl > speedCap) {
                     double f = speedCap / hl;
@@ -755,7 +817,9 @@ public class GorillaLocomotionHandler {
             //     floorStickiness 1.0 = full friction (stops fast)
             //     floorStickiness 0.0 = frictionless (same feel as ice)
             if (!threw && player.onGround()) {
-                double effectiveFriction = onIce
+                double effectiveFriction = vanillaIce
+                        ? iceKeepVanilla   // vanilla ice: slow decay (≈0.89) → skating
+                        : onIce
                         ? 1.0   // zero friction — no damping at all
                         : Math.max(0.0, Math.min(1.0,
                               MovementConfig.groundFriction * MovementConfig.floorStickiness));
@@ -765,8 +829,9 @@ public class GorillaLocomotionHandler {
                     player.setDeltaMovement(v.x * effectiveFriction, v.y, v.z * effectiveFriction);
                 }
 
-                // Ice speed cap (horizontal only — vertical fall is unaffected).
-                if (iceSpeedCap > 0.0) {
+                // Ice speed cap (horizontal only). Skipped under vanilla ice so momentum
+                // can build like real skating.
+                if (!vanillaIce && iceSpeedCap > 0.0) {
                     Vec3 v = player.getDeltaMovement();
                     double hs = Math.sqrt(v.x * v.x + v.z * v.z);
                     if (hs > iceSpeedCap) {
@@ -871,6 +936,10 @@ public class GorillaLocomotionHandler {
                 (handHitMain != null) ? handHitMain : hitMain, mainHand.gripping,
                 (handHitOff  != null) ? handHitOff  : hitOff,  offHand.gripping);
 
+        // Comprehensive per-tick trace: grip transitions + one line of full state.
+        logGripChanges();
+        logState(client, "TICK", player);
+
         // Record the velocity we are handing to the engine this tick — next tick's
         // teleport detection compares actual movement against this expectation.
         prevTickVel = player.getDeltaMovement();
@@ -943,6 +1012,8 @@ public class GorillaLocomotionHandler {
                 if (miningPos != null) gm.stopDestroyBlock();
                 gm.startDestroyBlock(pos, face);  // instant-breaks soft/creative blocks
                 miningPos = pos;
+                if (VmcDebugLog.on()) VmcDebugLog.event("MINE",
+                        "start " + pos + " " + client.level.getBlockState(pos).getBlock());
             }
             player.swing(InteractionHand.MAIN_HAND);
             miningGrace = MINING_GRACE;            // refresh the hold window
@@ -985,6 +1056,7 @@ public class GorillaLocomotionHandler {
     // Fire resistance negates it automatically (hot-floor is a fire damage type), and
     // vanilla hurt invulnerability frames throttle the cadence to match standing on it.
     private boolean touchingMagmaThisTick = false;
+    private boolean loggedMagma = false;   // edge state for the MAGMA debug event
 
     private void processMagmaTouch(Minecraft client, LocalPlayer player,
                                    BlockHitResult hitMain, boolean mainGrip,
@@ -994,8 +1066,15 @@ public class GorillaLocomotionHandler {
 
         boolean magma = (mainGrip && isMagma(client, hitMain))
                      || (offGrip  && isMagma(client, hitOff));
-        if (!magma) return;
+        if (!magma) {
+            if (loggedMagma) { VmcDebugLog.event("MAGMA", "off magma"); loggedMagma = false; }
+            return;
+        }
         touchingMagmaThisTick = true;
+        if (VmcDebugLog.on() && !loggedMagma) {
+            VmcDebugLog.event("MAGMA", "hand on magma → hot-floor damage");
+            loggedMagma = true;
+        }
 
         if (client.hasSingleplayerServer()) {
             var server = client.getSingleplayerServer();
@@ -1024,6 +1103,7 @@ public class GorillaLocomotionHandler {
     private void stopMining(Minecraft client) {
         if (miningPos != null) {
             if (client != null && client.gameMode != null) client.gameMode.stopDestroyBlock();
+            if (VmcDebugLog.on()) VmcDebugLog.event("MINE", "stop " + miningPos);
             miningPos = null;
         }
         miningGrace = 0;
@@ -1107,6 +1187,13 @@ public class GorillaLocomotionHandler {
         int gripCount   = (mainHand.gripping ? 1 : 0) + (offHand.gripping ? 1 : 0);
         boolean anyGrip = gripCount > 0;
 
+        // EXPERIMENTAL vanilla ice friction — detect an icy floor/grab surface once for
+        // BOTH the gripping (momentum-preserving skate) and free-slide paths below.
+        BlockPos feetPos        = BlockPos.containing(
+                player.getX(), player.getBoundingBox().minY - 0.1, player.getZ());
+        double   iceKeepVanilla = vanillaIceKeep(client, feetPos, touchMain, touchOff);
+        boolean  vanillaIce     = iceKeepVanilla > 0.0;
+
         // Both hands anchored → average so two hands don't double the drag.
         Vec3 move = (gripCount == 2) ? dragMain.add(dragOff).scale(0.5)
                                      : dragMain.add(dragOff);
@@ -1132,8 +1219,18 @@ public class GorillaLocomotionHandler {
             // Gripping: gravity off (the anchor holds you), body dragged to anchor.
             if (!noGravSet) { player.setNoGravity(true); noGravSet = true; }
 
+            // Normally the anchor servo REPLACES velocity with the drag, so gripping an
+            // icy floor kills your glide dead. With vanilla ice on, instead KEEP the
+            // incoming horizontal momentum (block friction × 0.91) and ADD the servo
+            // push on top — so you skate/push off the ice instead of stopping.
+            Vec3 commanded = vel;
+            if (vanillaIce) {
+                Vec3 cur = player.getDeltaMovement();
+                commanded = new Vec3(vel.x + cur.x * iceKeepVanilla, vel.y, vel.z + cur.z * iceKeepVanilla);
+            }
+
             // Wall-clip guard — zero any axis that would enter solid geometry.
-            player.setDeltaMovement(clampToBlocks(client, player, vel));
+            player.setDeltaMovement(clampToBlocks(client, player, commanded));
 
         } else {
             smoothedGripVel = Vec3.ZERO;
@@ -1159,12 +1256,13 @@ public class GorillaLocomotionHandler {
             }
 
             // Ground friction (ice = frictionless, capped at the ice speed cap).
-            BlockPos feetPos = BlockPos.containing(
-                    player.getX(), player.getBoundingBox().minY - 0.1, player.getZ());
+            // feetPos / iceKeepVanilla / vanillaIce were computed up top (shared).
             double   feetIce = iceBlockMultiplier(client, feetPos);
             boolean  onIce   = feetIce > 0.0;
             if (!threw && player.onGround()) {
-                double effectiveFriction = onIce
+                double effectiveFriction = vanillaIce
+                        ? iceKeepVanilla
+                        : onIce
                         ? 1.0
                         : Math.max(0.0, Math.min(1.0,
                               MovementConfig.groundFriction * MovementConfig.floorStickiness));
@@ -1172,7 +1270,7 @@ public class GorillaLocomotionHandler {
                     Vec3 v = player.getDeltaMovement();
                     player.setDeltaMovement(v.x * effectiveFriction, v.y, v.z * effectiveFriction);
                 }
-                if (onIce) {
+                if (onIce && !vanillaIce) {
                     double iceCap = effMaxSpd * feetIce;
                     Vec3 v  = player.getDeltaMovement();
                     double hs = Math.sqrt(v.x * v.x + v.z * v.z);
@@ -1445,6 +1543,50 @@ public class GorillaLocomotionHandler {
         });
     }
 
+    // One comprehensive per-tick state line (no-op unless debug logging is on). Covers
+    // everything the mod is doing this tick: physics mode, teleport state, player vs VR
+    // head position (hOff = the desync signal), per-hand grip kind, velocity, and ground/
+    // ice/gravity flags. Phase tags the moment: TICK (normal), AIM/SETTLE (teleport).
+    private void logState(Minecraft client, String phase, LocalPlayer player) {
+        if (!MovementConfig.debugLogging) return;
+        Vec3 pp = player.position();
+        Vec3 hp = vr.getHeadPos();
+        Vec3 v  = player.getDeltaMovement();
+        double hOff = (hp == null) ? -1.0
+                : Math.sqrt((hp.x - pp.x) * (hp.x - pp.x) + (hp.z - pp.z) * (hp.z - pp.z));
+        boolean onIce = client.level != null && iceBlockMultiplier(client,
+                BlockPos.containing(pp.x, player.getBoundingBox().minY - 0.1, pp.z)) > 0.0;
+        VmcDebugLog.log(String.format(
+            "%-6s mode=%s aim=%-5s cd=%-2d player=(%.2f,%.2f,%.2f) head=%s hOff=%.2f grip=%s/%s vel=(%.3f,%.3f,%.3f) ground=%b ice=%b noGrav=%b",
+            phase, MovementConfig.gtPhysics ? "GT" : "LEG", vr.isTeleportAiming(), teleportCooldown,
+            pp.x, pp.y, pp.z,
+            (hp == null ? "null" : String.format("(%.2f,%.2f,%.2f)", hp.x, hp.y, hp.z)),
+            hOff, gripStr(mainHand), gripStr(offHand), v.x, v.y, v.z,
+            player.onGround(), onIce, noGravSet));
+    }
+
+    // Compact per-hand grip descriptor for the state line: "-" free, "F" floor, "W" wall.
+    private static String gripStr(HandState h) {
+        return !h.gripping ? "-" : (h.floorGrip ? "F" : "W");
+    }
+
+    // Last-logged grip state, so we emit a GRIP event only on a change.
+    private boolean loggedGripM = false, loggedGripO = false;
+
+    private void logGripChanges() {
+        if (!VmcDebugLog.on()) return;
+        if (mainHand.gripping != loggedGripM) {
+            VmcDebugLog.event("GRIP", "main " + (mainHand.gripping
+                    ? "grab " + (mainHand.floorGrip ? "FLOOR" : "WALL") : "release"));
+            loggedGripM = mainHand.gripping;
+        }
+        if (offHand.gripping != loggedGripO) {
+            VmcDebugLog.event("GRIP", "off " + (offHand.gripping
+                    ? "grab " + (offHand.floorGrip ? "FLOOR" : "WALL") : "release"));
+            loggedGripO = offHand.gripping;
+        }
+    }
+
     // Whether we gripped this tick (climbing or sliding) — the no-fall-damage state.
     // VivemonkecraftClient reads this after tick() to drive the dedicated-server
     // fall-suppression keepalive (WallSlideC2SPayload). True only for the tick that
@@ -1603,6 +1745,43 @@ public class GorillaLocomotionHandler {
                     BlockPos.containing(pos.x + o[0], pos.y + o[1], pos.z + o[2])));
         }
         return best;
+    }
+
+    // VANILLA ICE FRICTION (experimental) — per-tick horizontal momentum KEEP factor for
+    // a slippery surface, = the block's vanilla friction × 0.91 (ice ≈ 0.89, blue ice a
+    // touch higher). Returns -1 when the toggle is off or no icy block is in contact, so
+    // callers fall back to the mod's own ice handling. Checks the feet block and both
+    // grab points, so it works whether you're standing on OR gripping the ice.
+    private double vanillaIceKeep(Minecraft client, BlockPos feetPos, Vec3 grabMain, Vec3 grabOff) {
+        if (!MovementConfig.vanillaIceFriction || client.level == null) return -1.0;
+        double k = iceFrictionKeep(client, feetPos);
+        if (k > 0.0) return k;
+        k = iceFrictionKeepNear(client, grabMain);
+        if (k > 0.0) return k;
+        return iceFrictionKeepNear(client, grabOff);
+    }
+
+    private double iceFrictionKeep(Minecraft client, BlockPos pos) {
+        if (pos == null || client.level == null) return -1.0;
+        BlockState bs = client.level.getBlockState(pos);
+        if (!(bs.is(Blocks.ICE) || bs.is(Blocks.PACKED_ICE) || bs.is(Blocks.BLUE_ICE))) return -1.0;
+        return bs.getBlock().getFriction() * 0.91;
+    }
+
+    // Same probe pattern as iceNearMultiplier, but returns the vanilla keep factor of the
+    // first icy block found around the (face-clamped) grab point.
+    private double iceFrictionKeepNear(Minecraft client, Vec3 point) {
+        if (point == null || client.level == null) return -1.0;
+        double d = 0.06;
+        double[][] probes = {
+            {0, 0, 0}, {d, 0, 0}, {-d, 0, 0}, {0, d, 0}, {0, -d, 0}, {0, 0, d}, {0, 0, -d}
+        };
+        for (double[] o : probes) {
+            double k = iceFrictionKeep(client,
+                    BlockPos.containing(point.x + o[0], point.y + o[1], point.z + o[2]));
+            if (k > 0.0) return k;
+        }
+        return -1.0;
     }
 
     // -----------------------------------------------------------------------
