@@ -4,7 +4,7 @@ import java.util.UUID;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Server → client: "player <uuid> has the monke model (legless look) on/off".
@@ -17,7 +17,7 @@ public record MonkeModelS2CPayload(UUID player, boolean enabled) implements Cust
 
     public static final CustomPacketPayload.Type<MonkeModelS2CPayload> ID =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("vivemonkecraft", "monke_model_sync"));
+                    Identifier.fromNamespaceAndPath("vivemonkecraft", "monke_model_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, MonkeModelS2CPayload> STREAM_CODEC =
             StreamCodec.of(

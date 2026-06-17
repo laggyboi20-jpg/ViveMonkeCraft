@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Client → server: "a hand is gripping a magma block this tick — hurt me."
@@ -21,7 +21,7 @@ public record MagmaTouchC2SPayload() implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MagmaTouchC2SPayload> ID =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("vivemonkecraft", "magma_touch"));
+                    Identifier.fromNamespaceAndPath("vivemonkecraft", "magma_touch"));
 
     public static final StreamCodec<FriendlyByteBuf, MagmaTouchC2SPayload> STREAM_CODEC =
             StreamCodec.unit(INSTANCE);

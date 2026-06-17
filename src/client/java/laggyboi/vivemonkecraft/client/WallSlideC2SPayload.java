@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Client → server: "I am gripping right now (climbing or sliding)" keepalive.
@@ -25,7 +25,7 @@ public record WallSlideC2SPayload(boolean gripping) implements CustomPacketPaylo
 
     public static final CustomPacketPayload.Type<WallSlideC2SPayload> ID =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("vivemonkecraft", "wall_slide"));
+                    Identifier.fromNamespaceAndPath("vivemonkecraft", "wall_slide"));
 
     public static final StreamCodec<FriendlyByteBuf, WallSlideC2SPayload> STREAM_CODEC =
             StreamCodec.of(

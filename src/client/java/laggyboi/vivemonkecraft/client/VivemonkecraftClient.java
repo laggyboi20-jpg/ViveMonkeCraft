@@ -272,7 +272,8 @@ public class VivemonkecraftClient implements ClientModInitializer {
                             // Op-lock: requires permission level 2 (operator).
                             // In singleplayer the host is always level 4, so this always works.
                             // On a server it reflects what the server reported to the client.
-                            if (mc.player == null || !mc.player.hasPermissions(2)) {
+                            if (mc.player == null || !mc.player.permissions().hasPermission(
+                                    net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
                                 if (mc.player != null) {
                                     mc.gui.setOverlayMessage(
                                         Component.literal("§c[ViveMonkeCraft] §fNeed operator access to change gravity"),

@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Client → server: "my monke model (legless look) is on/off".
@@ -16,7 +16,7 @@ public record MonkeModelC2SPayload(boolean enabled) implements CustomPacketPaylo
 
     public static final CustomPacketPayload.Type<MonkeModelC2SPayload> ID =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("vivemonkecraft", "monke_model"));
+                    Identifier.fromNamespaceAndPath("vivemonkecraft", "monke_model"));
 
     public static final StreamCodec<FriendlyByteBuf, MonkeModelC2SPayload> STREAM_CODEC =
             StreamCodec.of(

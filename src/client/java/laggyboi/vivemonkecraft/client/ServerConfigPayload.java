@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Client-side mirror of the server mod's ServerConfigPayload.
@@ -32,7 +32,7 @@ public record ServerConfigPayload(
 
     public static final CustomPacketPayload.Type<ServerConfigPayload> ID =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("vivemonkecraft", "server_cfg"));
+                    Identifier.fromNamespaceAndPath("vivemonkecraft", "server_cfg"));
 
     public static final StreamCodec<FriendlyByteBuf, ServerConfigPayload> STREAM_CODEC =
             StreamCodec.of(ServerConfigPayload::encode, ServerConfigPayload::decode);

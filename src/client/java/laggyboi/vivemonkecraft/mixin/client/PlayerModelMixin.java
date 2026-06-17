@@ -1,7 +1,7 @@
 package laggyboi.vivemonkecraft.mixin.client;
 import laggyboi.vivemonkecraft.client.MovementConfig;
 import laggyboi.vivemonkecraft.client.VmcMonkeRenderState;
-import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

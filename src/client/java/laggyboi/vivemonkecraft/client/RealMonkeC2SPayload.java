@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Client → server request: apply Real Monke (height-only hitbox shrink) to me.
@@ -19,7 +19,7 @@ public record RealMonkeC2SPayload(boolean enabled) implements CustomPacketPayloa
 
     public static final CustomPacketPayload.Type<RealMonkeC2SPayload> ID =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("vivemonkecraft", "real_monke"));
+                    Identifier.fromNamespaceAndPath("vivemonkecraft", "real_monke"));
 
     public static final StreamCodec<FriendlyByteBuf, RealMonkeC2SPayload> STREAM_CODEC =
             StreamCodec.of(

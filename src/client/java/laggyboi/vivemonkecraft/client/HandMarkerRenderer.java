@@ -3,7 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -77,7 +77,7 @@ public final class HandMarkerRenderer {
         if (shoulderMain == null || grabMain == null || shoulderOff == null || grabOff == null) return;
         if (buf == null) return;
 
-        VertexConsumer lines = buf.getBuffer(RenderType.lines());
+        VertexConsumer lines = buf.getBuffer(RenderTypes.lines());
 
         // Capped radius so the drawn cube always matches the EFFECTIVE grab box.
         double r = SettingCaps.handRadius();
@@ -94,7 +94,7 @@ public final class HandMarkerRenderer {
 
         // Flush immediately so the lines are visible this frame.
         if (buf instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch(RenderType.lines());
+            bs.endBatch(RenderTypes.lines());
         }
     }
 
