@@ -79,10 +79,7 @@ public final class CameraStabilizationRenderer {
         float edgeFrac = smoothFactor * strength * 0.28f;
         if (edgeFrac < 0.005f) return;
 
-        // Alpha capped at 230 so the corners are never fully opaque —
-        // you can still orient yourself even at max strength.
-        int alpha = Math.min(230, (int)(230 * smoothFactor * strength));
-
+        int alpha = Math.min(230, (int) (230 * smoothFactor * strength));
         drawVignette(edgeFrac, alpha);
     }
 
