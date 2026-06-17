@@ -144,6 +144,11 @@ public class VrCameraHeightMixin {
     @org.spongepowered.asm.mixin.Unique
     private static double vmc$currentDrop() {
         if (!VivemonkecraftClient.isEnabled()) return 0.0;
+        // No drop while riding (boat/minecart/horse) or elytra-flying: the seat/flight
+        // already sets your eye height, so dropping it 0.9 would sink the camera down
+        // INTO the vehicle. Locomotion is suspended in those states anyway.
+        net.minecraft.client.player.LocalPlayer p = net.minecraft.client.Minecraft.getInstance().player;
+        if (p != null && (p.isPassenger() || p.isFallFlying())) return 0.0;
         return MovementConfig.realMonke ? 0.9 : MovementConfig.cameraHeightOffset;
     }
 
