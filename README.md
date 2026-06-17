@@ -1,6 +1,6 @@
 # ViveMonkeCraft
 
-**Gorilla Tag style VR locomotion for Minecraft 1.21.4.** Grab the world with your
+**Gorilla Tag style VR locomotion for Minecraft 1.21.5.** Grab the world with your
 hands and swing, climb, and fling yourself through it. No joystick required.
 
 Built for **QuestCraft / Vivecraft 1.2.x**. Client-side for singleplayer & LAN; an
@@ -12,7 +12,7 @@ optional server companion unlocks it (and lets admins cap it) on dedicated serve
 
 | | |
 |---|---|
-| Minecraft | 1.21.4 |
+| Minecraft | 1.21.8 |
 | Loader | Fabric Loader 0.19.3+ |
 | API | Fabric API |
 | VR | QuestCraft / Vivecraft 1.2.x |

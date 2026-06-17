@@ -267,6 +267,24 @@ public final class MovementConfig {
     // true/false.
     public static boolean magmaTouchDamage = true;
 
+    // EXPERIMENTAL — VANILLA ICE FRICTION: when on, gripping/standing on ice makes you
+    // skate with VANILLA ice physics (the block's own friction × 0.91 inertia, no speed
+    // cap) instead of the mod's frictionless-but-capped ice. Floor/feet only — the
+    // ice-WALL push-off is unchanged (legs have no wall analog). true/false.
+    public static boolean vanillaIceFriction = false;
+
+    // DEBUG LOGGING: when on, writes a focused trace of Vivecraft↔ViveMonkeCraft
+    // interactions (teleport aim, room-origin re-sync, head-vs-body desync, grip state)
+    // to logs/vivemonkecraft-debug.log. For diagnosing VR-only issues. true/false.
+    public static boolean debugLogging = false;
+
+    // ALLOW VIVECRAFT TELEPORT: by default the mod DISABLES Vivecraft's teleport while
+    // gorilla locomotion is on, because teleporting desyncs the room origin and breaks
+    // the hand physics. Turn this ON to keep teleport usable anyway (you accept the
+    // post-teleport jank). When the mod is OFF, teleport always works regardless.
+    // true/false.
+    public static boolean allowTeleport = false;
+
 
     // NOTE: presets live in ModMenuIntegration (the Mod Menu config screen) — the
     // old in-class preset system was unused and has been removed.
@@ -349,10 +367,13 @@ public final class MovementConfig {
         realMonke           = true;
         modelTorsoPitch     = -120.0;
         gtPhysics           = false;
-        punchMining         = false;
-        punchMiningThreshold = 0.08;
-        punchMiningNoTool   = false;
+        punchMining         = true;
+        punchMiningThreshold = 0.04;
+        punchMiningNoTool   = true;
         magmaTouchDamage    = true;
+        vanillaIceFriction  = false;
+        debugLogging        = false;
+        allowTeleport       = false;
     }
 
     // Reads the file into the fields above. Safe to call repeatedly. Never throws.
@@ -415,6 +436,9 @@ public final class MovementConfig {
                     punchMiningThreshold = parseD(p, "punchMiningThreshold", punchMiningThreshold);
                     punchMiningNoTool   = parseB(p, "punchMiningNoTool",   punchMiningNoTool);
                     magmaTouchDamage    = parseB(p, "magmaTouchDamage",    magmaTouchDamage);
+                    vanillaIceFriction  = parseB(p, "vanillaIceFriction",  vanillaIceFriction);
+                    debugLogging        = parseB(p, "debugLogging",        debugLogging);
+                    allowTeleport       = parseB(p, "allowTeleport",       allowTeleport);
                     clampHandModels     = parseB(p, "clampHandModels",     clampHandModels);
                 }
             } else {
@@ -617,7 +641,13 @@ public final class MovementConfig {
             sb.append("# Punch mining without the matching tool (any item / bare hands). true/false.\n");
             sb.append("punchMiningNoTool=").append(punchMiningNoTool).append("\n\n");
             sb.append("# Grabbing a magma block (any face) hurts you like standing on it. true/false.\n");
-            sb.append("magmaTouchDamage=").append(magmaTouchDamage).append("\n");
+            sb.append("magmaTouchDamage=").append(magmaTouchDamage).append("\n\n");
+            sb.append("# EXPERIMENTAL - vanilla ice friction on hands/feet (skate physics). true/false.\n");
+            sb.append("vanillaIceFriction=").append(vanillaIceFriction).append("\n\n");
+            sb.append("# Write a focused Vivecraft-interaction trace to logs/vivemonkecraft-debug.log. true/false.\n");
+            sb.append("debugLogging=").append(debugLogging).append("\n\n");
+            sb.append("# Keep Vivecraft teleport usable while the mod is on (it desyncs physics). true/false.\n");
+            sb.append("allowTeleport=").append(allowTeleport).append("\n");
 
             Files.writeString(path, sb.toString());
         } catch (Exception e) {
