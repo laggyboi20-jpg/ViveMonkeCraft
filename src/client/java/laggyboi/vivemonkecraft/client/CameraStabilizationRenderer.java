@@ -17,24 +17,22 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 // =====================================================================
-// CAMERA STABILIZATION RENDERER  (QuestCraft / Vivecraft 1.2.x)
+// CAMERA STABILIZATION RENDERER  (QuestCraft / Vivecraft)
 // =====================================================================
 //
-// Draws a black vignette border inside the VR headset display to narrow
-// the perceived field-of-view while locomotion is fast. This reduces the
-// peripheral visual-motion signal that contributes to motion sickness.
+// Draws a black vignette border inside the VR headset display to narrow the
+// perceived field-of-view while locomotion is fast, reducing motion sickness.
 //
-// Why WorldRenderEvents.AFTER_TRANSLUCENT:
-//   HudRenderCallback fires during Vivecraft floating GUI panel pass —
-//   its output appears on that panel, not in the VR lens. AFTER_TRANSLUCENT
-//   fires inside the actual scene render, so the vignette ends up in the
-//   headset display.
-//
-// Why clip-space / identity matrices:
-//   The vignette must be head-locked (no world-space parallax). Resetting
-//   both ModelView and Projection to identity maps NDC cords (-1 - +1)
-//   directly to screen edges, independent of the camera. Depth test off so
-//   it draws on top of the scene.
+// ⚠️ 1.21.5 PORT — TEMPORARILY STUBBED ⚠️
+// Minecraft 1.21.5 removed the immediate-mode render path this used
+// (BufferUploader, CoreShaders, RenderSystem.setShader/enableBlend/
+// disableDepthTest/defaultBlendFunc) in favour of the new RenderPipeline /
+// GpuDevice command system. The head-locked vignette needs reimplementing
+// against that API. The speed/easing logic below is preserved and still
+// computes smoothFactor; only the actual GPU draw (drawVignette) is a no-op,
+// so the rest of the mod builds and runs. Re-enable by implementing
+// drawVignette() with a RenderPipeline. (This is the recurring pain file when
+// porting up MC versions — the rest of the mod is render-API-light.)
 // =====================================================================
 
 public final class CameraStabilizationRenderer {
@@ -56,17 +54,13 @@ public final class CameraStabilizationRenderer {
     private static void onWorldRender(WorldRenderContext ctx) {
         if (!VivemonkecraftClient.isEnabled()) return;
         if (!MovementConfig.cameraStabEnabled) return;
-
-        // Gate: only draw when QuestCraft VR is actually active.
-        // VivecraftBridge.isVrActive() uses reflection and never throws;
-        // returns false when QuestCraft is absent or VR is off.
         if (!VivecraftBridge.isVrActive()) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // Horizontal speed drives the effect; vertical weight is halved so
-        // normal gravity falls don't trigger it.
+        // Horizontal speed drives the effect; vertical weight halved so normal falls
+        // don't trigger it.
         Vec3 vel = mc.player.getDeltaMovement();
         double speed = vel.horizontalDistance() + Math.abs(vel.y) * 0.5;
 
@@ -74,9 +68,7 @@ public final class CameraStabilizationRenderer {
         float rawFactor = (float) Math.max(0.0,
                 Math.min(1.0, (speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)));
 
-        // Ease in fast (snap on within ~2 frames), ease out slowly (~15 frames).
-        // VR runs at ~90 fps; at 0.5 step the vignette appears in 2 frames (~22ms),
-        // and fades over ~15 frames (~170ms) after stopping — long enough not to flicker.
+        // Ease in fast, ease out slowly.
         if (rawFactor > smoothFactor) {
             smoothFactor += (rawFactor - smoothFactor) * 0.5f;
         } else {
