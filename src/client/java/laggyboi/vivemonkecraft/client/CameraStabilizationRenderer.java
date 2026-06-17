@@ -101,58 +101,6 @@ public final class CameraStabilizationRenderer {
     // Temporarily replaces both matrices with identity so NDC coordinates
     // map 1:1 to screen position (-1 .. +1), then restores them.
     private static void drawVignette(float edgeFrac, int alpha) {
-        // --- save ---
-        Matrix4f      savedProj = new Matrix4f(RenderSystem.getProjectionMatrix());
-        ProjectionType savedType = RenderSystem.getProjectionType();
-        Matrix4fStack  mvStack   = RenderSystem.getModelViewStack();
-        mvStack.pushMatrix();
-        mvStack.identity(); // clear camera transform — vertices ARE clip cords now
-
-        RenderSystem.setProjectionMatrix(new Matrix4f(), ProjectionType.ORTHOGRAPHIC);
-
-        // --- draw ---
-        RenderSystem.disableDepthTest();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-
-        // In NDC space_x/y span from -1 (left/bottom) to +1 (right/top).
-        // e = edgeFrac * 2 converts 0..1 fraction of half-screen to NDC units.
-        float e = edgeFrac * 2.0f;
-
-        Tesselator   tess = Tesselator.getInstance();
-        BufferBuilder buf  = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
-        // Top strip   — full width, top e of screen
-        buf.addVertex(-1f,   1f,      0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f,   1f,      0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f,   1f - e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex(-1f,   1f - e,  0f).setColor(0, 0, 0, alpha);
-
-        // Bottom strip — full width, bottom e of screen
-        buf.addVertex(-1f,  -1f + e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f,  -1f + e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f,  -1f,      0f).setColor(0, 0, 0, alpha);
-        buf.addVertex(-1f,  -1f,      0f).setColor(0, 0, 0, alpha);
-
-        // Left strip  — left e, between top/bottom strips (no double-covering corners)
-        buf.addVertex(-1f,      1f - e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex(-1f + e,  1f - e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex(-1f + e, -1f + e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex(-1f,     -1f + e,  0f).setColor(0, 0, 0, alpha);
-
-        // Right strip — right e, between top/bottom strips
-        buf.addVertex( 1f - e,  1f - e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f,      1f - e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f,     -1f + e,  0f).setColor(0, 0, 0, alpha);
-        buf.addVertex( 1f - e, -1f + e,  0f).setColor(0, 0, 0, alpha);
-
-        MeshData mesh = buf.buildOrThrow();
-        BufferUploader.drawWithShader(mesh);
-
-        // --- restore ---
-        RenderSystem.enableDepthTest();
-        RenderSystem.setProjectionMatrix(savedProj, savedType);
-        mvStack.popMatrix();
+        // intentionally empty until ported to the 1.21.5 render pipeline
     }
 }
