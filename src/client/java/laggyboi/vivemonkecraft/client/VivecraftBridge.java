@@ -41,6 +41,18 @@ public final class VivecraftBridge {
         return INSTANCE.isVRActive();
     }
 
+    /**
+     * Enable/disable Vivecraft's teleport movement at runtime (not a saved setting).
+     * We disable it while gorilla locomotion is active so the teleport button can't
+     * desync the room origin and break our physics. No-op if Vivecraft is absent.
+     */
+    public static void setTeleportDisabled(boolean disabled) {
+        // POLARITY: the debug read-back proved teleportOverride is effectively "teleport
+        // ENABLED" — isTeleportEnabled() tracks it (override=true → on, false → off).
+        // So to DISABLE teleport we must pass FALSE, and to allow it, TRUE.
+        INSTANCE.setTeleportOverride(!disabled);
+    }
+
     // -----------------------------------------------------------------------
     // Connection lifecycle
     // -----------------------------------------------------------------------
@@ -125,6 +137,7 @@ public final class VivecraftBridge {
                 fTeleportTracker       = dh.getField("teleportTracker");
                 Class<?> tt = Class.forName("org.vivecraft.client_vr.gameplay.trackers.TeleportTracker");
                 mIsAiming = tt.getMethod("isAiming");
+                VmcDebugLog.log("isTeleportAiming wired OK");
             }
             Object holder = mDataHolderGetInstance.invoke(null);
             if (holder == null) return false;
@@ -134,7 +147,82 @@ public final class VivecraftBridge {
             return (aiming instanceof Boolean) && (Boolean) aiming;
         } catch (Throwable t) {
             tpBroken = true;
+            VmcDebugLog.log("isTeleportAiming FAILED: " + t);
             return false;
+        }
+    }
+
+    private boolean snapTried  = false;
+    private boolean snapBroken = false;
+    private Method  mSnapOrigin; // VRPlayer#snapRoomOriginToPlayerEntity(Entity,boolean,boolean)
+
+    /**
+     * Force Vivecraft's room origin to re-sync to the player entity — the fix for a
+     * teleport leaving the origin behind (you slide in place / can't push afterwards).
+     * Args (false, true) mirror Vivecraft's own JumpTracker re-sync. Call ONLY right
+     * after a teleport, never every tick — it cancels roomscale walking otherwise.
+     */
+    public void snapRoomOriginToPlayer(net.minecraft.world.entity.Entity player) {
+        if (snapBroken || player == null || tryWire() != Link.LEGACY) return;
+        try {
+            if (!snapTried) {
+                snapTried = true;
+                Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
+                mSnapOrigin = vrPlayer.getMethod("snapRoomOriginToPlayerEntity",
+                        net.minecraft.world.entity.Entity.class, boolean.class, boolean.class);
+                VmcDebugLog.log("snapRoomOriginToPlayer wired OK");
+            }
+            Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
+            if (vp != null) mSnapOrigin.invoke(vp, player, false, true);
+            else VmcDebugLog.log("snapRoomOriginToPlayer: VRPlayer.get() returned null");
+        } catch (Throwable t) {
+            snapBroken = true;
+            VmcDebugLog.log("snapRoomOriginToPlayer FAILED: " + t);
+        }
+    }
+
+    private boolean tpoTried  = false;
+    private boolean tpoBroken = false;
+    private Method  mSetTeleportOverride; // VRPlayer#setTeleportOverride(boolean)
+    private Method  mUpdateTeleportKeys;  // VRPlayer#updateTeleportKeys()
+    private Method  mIsTeleportEnabled;   // VRPlayer#isTeleportEnabled()
+    private Boolean tpoLast = null;       // last override value, for change-only logging
+
+    /**
+     * Set Vivecraft's teleport override and IMMEDIATELY re-apply it. Setting the flag
+     * alone does nothing live — Vivecraft only pushes isTeleportEnabled() onto the
+     * teleport input actions inside updateTeleportKeys(), which normally runs only at
+     * init/settings-change. updateTeleportKeys() just calls setEnabled() on the two
+     * teleport actions (no side effects), so we call it here to make the change stick.
+     */
+    public void setTeleportOverride(boolean override) {
+        if (tpoBroken || tryWire() != Link.LEGACY) return;
+        try {
+            if (!tpoTried) {
+                tpoTried = true;
+                Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
+                mSetTeleportOverride = vrPlayer.getMethod("setTeleportOverride", boolean.class);
+                mUpdateTeleportKeys  = vrPlayer.getMethod("updateTeleportKeys");
+                mIsTeleportEnabled   = vrPlayer.getMethod("isTeleportEnabled");
+                VmcDebugLog.event("VR", "teleport-override reflection wired OK");
+            }
+            Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
+            if (vp == null) {
+                if (!Boolean.FALSE.equals(tpoLast)) VmcDebugLog.event("VR", "setTeleportOverride: VRPlayer.get() null");
+                return;
+            }
+            mSetTeleportOverride.invoke(vp, override);
+            mUpdateTeleportKeys.invoke(vp);   // re-apply to the input actions NOW
+            // Log only when the value changes, with a read-back proving it took effect.
+            if (tpoLast == null || tpoLast != override) {
+                tpoLast = override;
+                Object enabledNow = mIsTeleportEnabled.invoke(vp);
+                VmcDebugLog.event("VR", "setTeleportOverride(" + override
+                        + ") applied → isTeleportEnabled=" + enabledNow);
+            }
+        } catch (Throwable t) {
+            tpoBroken = true;
+            VmcDebugLog.event("VR", "setTeleportOverride FAILED: " + t);
         }
     }
 

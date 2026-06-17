@@ -101,7 +101,7 @@ public class ModMenuIntegration implements ModMenuApi {
                     Component.literal("Default     — Reset all settings to factory defaults."),
                     Component.literal("Gorilla Tag — Authentic GT feel: stronger throws, less air drag."),
                     Component.literal("Zero Gravity— Float after letting go; space-like movement."),
-                    Component.literal("Speed Run   — Very powerful launches, long arms, low air drag.")
+                    Component.literal("Speed Run   — Very powerful launches, low air drag.")
                 )
                 // Just STORE the name — applyPreset() is called in setSavingRunnable
                 // (which runs after ALL slider save consumers) so the preset wins.
@@ -121,6 +121,11 @@ public class ModMenuIntegration implements ModMenuApi {
                 Component.literal("ON = step assist places you directly on top of the ledge (instant)."),
                 Component.literal("OFF = old behaviour: an upward velocity boost arcs you over it."))
             .setSaveConsumer(v -> MovementConfig.stepTeleport = v).build());
+
+        movement.addEntry(eb.startBooleanToggle(Component.literal("Step assist"), MovementConfig.stepAssist)
+                .setDefaultValue(true)
+                .setTooltip(Component.literal("Raise step height so legs stop snagging on block edges."))
+                .setSaveConsumer(v -> MovementConfig.stepAssist = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Push speed"), MovementConfig.pullStrength)
             .setDefaultValue(2.0).setMin(0.0).setMax(8.0)
@@ -182,11 +187,6 @@ public class ModMenuIntegration implements ModMenuApi {
             .setTooltip(Component.literal("Shrinks your collision box height to climb onto blocks. 1.0 = normal, 0.25 = compact (default)."))
             .setSaveConsumer(v -> MovementConfig.hitboxHeightScale = v).build());
 
-        body.addEntry(eb.startBooleanToggle(Component.literal("Step assist"), MovementConfig.stepAssist)
-            .setDefaultValue(true)
-            .setTooltip(Component.literal("Raise step height so legs stop snagging on block edges."))
-            .setSaveConsumer(v -> MovementConfig.stepAssist = v).build());
-
         body.addEntry(eb.startDoubleField(Component.literal("Step height"), MovementConfig.stepHeight)
             .setDefaultValue(1.5).setMin(0.5).setMax(2.0)
             .setTooltip(Component.literal("Ledge height you can step over. 0.6 = vanilla, 1.5 = 1.5 blocks (default)."))
@@ -232,11 +232,6 @@ public class ModMenuIntegration implements ModMenuApi {
         // VISUAL
         // ====================================================================
         ConfigCategory visual = builder.getOrCreateCategory(Component.literal("Visual"));
-
-        visual.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
-            .setDefaultValue(true)
-            .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
-            .setSaveConsumer(v -> MovementConfig.showHandMarkers = v).build());
 
         visual.addEntry(eb.startBooleanToggle(Component.literal("Clamp hand models to surfaces"), MovementConfig.clampHandModels)
             .setDefaultValue(true)
@@ -305,6 +300,40 @@ public class ModMenuIntegration implements ModMenuApi {
             .setTooltip(Component.literal("Extra head rotation in degrees (added on top of look direction)."))
             .setSaveConsumer(v -> MovementConfig.modelHeadPitch = v).build());
 
+        //Block_interactions page
+        ConfigCategory BlockInteractions = builder.getOrCreateCategory(Component.literal("BlockInteractions"));
+
+        BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Punch mining (experimental)"), MovementConfig.punchMining)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("Break the block your hand touches — but only while holding the"),
+                        Component.literal("tool MEANT for it (pickaxe on stone, etc.) AND only when you PUNCH it"),
+                        Component.literal("(hand speed into the block). Gentle grabs never mine, so climbing"),
+                        Component.literal("with the tool in hand stays safe. Off by default."))
+                .setSaveConsumer(v -> MovementConfig.punchMining = v).build());
+
+        BlockInteractions.addEntry(eb.startDoubleField(Component.literal("Block_Breaking Threshold"),
+                        MovementConfig.punchMiningThreshold)
+                .setDefaultValue(0.08).setMin(0.0).setMax(1)
+                .setTooltip(
+                        Component.literal("how easily you break blocks"),
+                        Component.literal("0 make block damage just by touching"))
+                .setSaveConsumer(V -> MovementConfig.punchMiningThreshold = V).build());
+
+        BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Punch mining: no tool needed"), MovementConfig.punchMiningNoTool)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("Let punch mining break blocks with ANY item (even bare hands) —"),
+                        Component.literal("hand speed alone decides. Tool-required blocks still won't drop"),
+                        Component.literal("items without the right tool, like vanilla. Off by default."))
+                .setSaveConsumer(v -> MovementConfig.punchMiningNoTool = v).build());
+
+        BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Magma block sides hurt"), MovementConfig.magmaTouchDamage)
+                .setDefaultValue(true)
+                .setTooltip(
+                        Component.literal("Grabbing a magma block on ANY face (not just standing on top)"),
+                        Component.literal("deals the same hot-floor damage. Fire resistance negates it."))
+                .setSaveConsumer(v -> MovementConfig.magmaTouchDamage = v).build());
 
         // ====================================================================
         // GT PHYSICS — everything about the anchor-mode port of the official
@@ -353,6 +382,15 @@ public class ModMenuIntegration implements ModMenuApi {
         //Experimental page For Experimental stuff
         ConfigCategory Experimental = builder.getOrCreateCategory(Component.literal("Experimental"));
 
+        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Allow Vivecraft teleport"), MovementConfig.allowTeleport)
+                .setDefaultValue(false)
+                .setTooltip(
+                        Component.literal("OFF (default): teleport is disabled while gorilla locomotion is on,"),
+                        Component.literal("because teleporting desyncs the room origin and breaks hand physics."),
+                        Component.literal("ON: keep teleport usable anyway (you accept the post-teleport jank)."),
+                        Component.literal("Teleport always works when the mod is OFF."))
+                .setSaveConsumer(v -> MovementConfig.allowTeleport = v).build());
+
         Experimental.addEntry(eb.startBooleanToggle(Component.literal("Ice floor = ice wall (experimental)"), MovementConfig.iceFloorWallLogic)
                 .setDefaultValue(false)
                 .setTooltip(
@@ -362,38 +400,32 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.literal("leave comment which one is better this or default"))
                 .setSaveConsumer(v -> MovementConfig.iceFloorWallLogic = v).build());
 
-        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Punch mining (experimental)"), MovementConfig.punchMining)
+        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Vanilla ice friction"), MovementConfig.vanillaIceFriction)
                 .setDefaultValue(false)
                 .setTooltip(
-                        Component.literal("Break the block your hand touches — but only while holding the"),
-                        Component.literal("tool MEANT for it (pickaxe on stone, etc.) AND only when you PUNCH it"),
-                        Component.literal("(hand speed into the block). Gentle grabs never mine, so climbing"),
-                        Component.literal("with the tool in hand stays safe. Off by default."))
-                .setSaveConsumer(v -> MovementConfig.punchMining = v).build());
+                        Component.literal("Ice acts on your hands/feet like vanilla legs do: you SKATE with"),
+                        Component.literal("the block's real friction (×0.91 inertia) and no speed cap, instead"),
+                        Component.literal("of the mod's frictionless-but-capped ice. Floor/feet only — the"),
+                        Component.literal("ice-wall push-off is unchanged."))
+                .setSaveConsumer(v -> MovementConfig.vanillaIceFriction = v).build());
 
-        Experimental.addEntry(eb.startDoubleField(Component.literal("Block_Breaking Threshold"),
-                        MovementConfig.punchMiningThreshold)
-                            .setDefaultValue(0.08).setMin(0.0).setMax(1)
-                            .setTooltip(
-                             Component.literal("how easily you break blocks"),
-                             Component.literal("0 make block damage just by touching"))
-                             .setSaveConsumer(V -> MovementConfig.punchMiningThreshold = V).build());
 
-        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Punch mining: no tool needed"), MovementConfig.punchMiningNoTool)
+
+        //Debug Options
+        ConfigCategory Debugs = builder.getOrCreateCategory(Component.literal("Debug Options"));
+        Debugs.addEntry(eb.startBooleanToggle(Component.literal("Debug logging"), MovementConfig.debugLogging)
                 .setDefaultValue(false)
                 .setTooltip(
-                        Component.literal("Let punch mining break blocks with ANY item (even bare hands) —"),
-                        Component.literal("hand speed alone decides. Tool-required blocks still won't drop"),
-                        Component.literal("items without the right tool, like vanilla. Off by default."))
-                .setSaveConsumer(v -> MovementConfig.punchMiningNoTool = v).build());
+                        Component.literal("Write a focused ViveMonkeCraft-interaction trace"),
+                        Component.literal("to logs/vivemonkecraft-debug.log."),
+                        Component.literal("Turn on, reproduce the issue in VR, then share that file."),
+                        Component.literal("this Is performance heavy Not recommended for quest"))
+                .setSaveConsumer(v -> MovementConfig.debugLogging = v).build());
 
-        Experimental.addEntry(eb.startBooleanToggle(Component.literal("Magma block sides hurt"), MovementConfig.magmaTouchDamage)
+        Debugs.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
                 .setDefaultValue(true)
-                .setTooltip(
-                        Component.literal("Grabbing a magma block on ANY face (not just standing on top)"),
-                        Component.literal("deals the same hot-floor damage. Fire resistance negates it."))
-                .setSaveConsumer(v -> MovementConfig.magmaTouchDamage = v).build());
-
+                .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
+                .setSaveConsumer(v -> MovementConfig.showHandMarkers = v).build());
 
         return builder.build();
     }
@@ -487,7 +519,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 MovementConfig.modelTorsoPitch     = -120.0;
                 break;
 
-            case "Parkour / Speed Run":
+            case "Speed Run":
                 // Built for covering ground as fast as possible:
                 //   - Very high pull strength for huge launches.
                 //   - Long gorilla arms to grab from further away.
@@ -495,14 +527,14 @@ public class ModMenuIntegration implements ModMenuApi {
                 //   - Fewer history ticks for snappier throw detection.
                 //   - High max speed so you can actually rocket.
                 MovementConfig.pullStrength        = 5.0;
-                MovementConfig.handReachMultiplier = 3.0;
-                MovementConfig.maxArmLength        = 4.0;
-                MovementConfig.airFriction         = 0.0;
+                MovementConfig.handReachMultiplier = 1.0;
+                MovementConfig.maxArmLength        = 1.5;
+                MovementConfig.airFriction         = 0.1;
                 MovementConfig.jumpMultiplier      = 3.5;
                 MovementConfig.maxJumpSpeed        = 3.0;
                 MovementConfig.velocityHistorySize = 4;
                 MovementConfig.groundFriction      = 0.7;
-                MovementConfig.gravityMultiplier   = 1.0;
+                MovementConfig.gravityMultiplier   = 0.9;
                 MovementConfig.monkeModel          = true;
                 MovementConfig.realMonke           = true;
                 MovementConfig.modelTorsoPitch     = -120.0;
