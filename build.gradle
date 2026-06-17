@@ -27,7 +27,11 @@ repositories {
     maven { url "https://maven.terraformersmc.com/releases/" }
     // Cloth Config (the slider/toggle widgets used to build the config screen)
     maven { url "https://maven.shedaniel.me/" }
-}
+    //vrapi-3.0.12-1.21.4-fabric
+    maven {
+         url = "https://cursemaven.com"
+         }
+    }
 
 dependencies {
     // To change the versions see the gradle.properties file
@@ -37,6 +41,12 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // NOTE: this had a literal "FILE_ID" placeholder version, which cursemaven can't
+    // resolve (HTTP 400) and breaks configuration once Loom's cache is rebuilt. The mod
+    // talks to Vivecraft/QuestCraft purely by reflection (VivecraftBridge), so it needs
+    // no compile-time VR API. Re-add with a REAL CurseForge file id if you ever want it.
+    // modApi "curse.maven:mcvrapi-591092:<real-file-id>"
 
     // -- Optional: enables the in-game config screen via Mod Menu --
     // modImplementation (remapped) for obfuscated 1.21.4.
