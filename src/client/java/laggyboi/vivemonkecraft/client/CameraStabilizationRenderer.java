@@ -97,9 +97,9 @@ public final class CameraStabilizationRenderer {
         drawVignette(edgeFrac, alpha);
     }
 
-    // Renders 4 black quads around the screen edges in clip space.
-    // Temporarily replaces both matrices with identity so NDC coordinates
-    // map 1:1 to screen position (-1 .. +1), then restores them.
+    // TODO(1.21.5): reimplement with the new RenderPipeline / GpuDevice API.
+    // Was: identity matrices + Tesselator QUADS + BufferUploader.drawWithShader
+    // with CoreShaders.POSITION_COLOR. Currently a no-op so the mod builds on 1.21.5.
     private static void drawVignette(float edgeFrac, int alpha) {
         // intentionally empty until ported to the 1.21.5 render pipeline
     }
