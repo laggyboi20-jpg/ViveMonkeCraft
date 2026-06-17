@@ -76,8 +76,6 @@ public final class CameraStabilizationRenderer {
         }
         if (smoothFactor < 0.01f) return;
 
-        // edgeFrac: fraction of the half-screen (0..1) to cover from each edge.
-        // 0.28 = up to 28% of the view from each edge at max strength.
         float edgeFrac = smoothFactor * strength * 0.28f;
         if (edgeFrac < 0.005f) return;
 
