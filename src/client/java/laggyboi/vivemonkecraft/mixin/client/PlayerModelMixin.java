@@ -2,7 +2,7 @@ package laggyboi.vivemonkecraft.mixin.client;
 import laggyboi.vivemonkecraft.client.MovementConfig;
 import laggyboi.vivemonkecraft.client.VmcMonkeRenderState;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.renderer.entity.state.PlayerRenderState;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -33,11 +33,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class PlayerModelMixin {
 
     @Inject(
-        method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;)V",
+        method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",
         at = @At("TAIL"),
         require = 0
     )
-    private void vmc$monkeBody(PlayerRenderState state, CallbackInfo ci) {
+    private void vmc$monkeBody(AvatarRenderState state, CallbackInfo ci) {
         if (!(state instanceof VmcMonkeRenderState monke)) return;
 
         PlayerModel self = (PlayerModel) (Object) this;
@@ -62,7 +62,9 @@ public class PlayerModelMixin {
             self.body.y    += (float) MovementConfig.modelTorsoOffsetY;
             self.body.xRot += (float) Math.toRadians(MovementConfig.modelTorsoPitch);
             self.body.yScale *= (float) MovementConfig.modelTorsoScaleY;
-            self.jacket.copyFrom(self.body);
+            // 1.21.9 removed ModelPart.copyFrom; loadPose(storePose()) copies the full
+            // pose (translation + rotation + scale, PartPose now carries scale).
+            self.jacket.loadPose(self.body.storePose());
 
             // ARMS: vertical offset + rotation (added on top of the swing animation).
             float armPitch = (float) Math.toRadians(MovementConfig.modelArmsPitch);
@@ -70,13 +72,13 @@ public class PlayerModelMixin {
             self.rightArm.y   += (float) MovementConfig.modelArmsOffsetY;
             self.leftArm.xRot  += armPitch;
             self.rightArm.xRot += armPitch;
-            self.leftSleeve.copyFrom(self.leftArm);
-            self.rightSleeve.copyFrom(self.rightArm);
+            self.leftSleeve.loadPose(self.leftArm.storePose());
+            self.rightSleeve.loadPose(self.rightArm.storePose());
 
             // HEAD: vertical offset + rotation; hat layer follows.
             self.head.y    += (float) MovementConfig.modelHeadOffsetY;
             self.head.xRot += (float) Math.toRadians(MovementConfig.modelHeadPitch);
-            self.hat.copyFrom(self.head);
+            self.hat.loadPose(self.head.storePose());
         }
 
         // NOTE: no head-hide here. With the collision-only hitbox shrink (eye height

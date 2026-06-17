@@ -1,7 +1,5 @@
 package laggyboi.vivemonkecraft.client;
 
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 
@@ -37,10 +35,13 @@ public final class CameraStabilizationRenderer {
     private static float smoothFactor = 0.0f;
 
     public static void register() {
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(CameraStabilizationRenderer::onWorldRender);
+        // 1.21.9 removed Fabric's WorldRenderEvents/WorldRenderContext in the render
+        // rework, so there's no per-frame world hook to register against. The vignette
+        // draw was already a no-op stub (see drawVignette), so registration is a no-op
+        // too until both are reimplemented against the new RenderPipeline API.
     }
 
-    private static void onWorldRender(WorldRenderContext ctx) {
+    private static void onWorldRender() {
         if (!VivemonkecraftClient.isEnabled()) return;
         if (!MovementConfig.cameraStabEnabled) return;
         if (!VivecraftBridge.isVrActive()) return;

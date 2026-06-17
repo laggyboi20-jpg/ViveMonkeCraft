@@ -88,7 +88,7 @@ public final class EmbeddedServerLogic {
                     if (payload.enabled()) monkeModelPlayers.add(id);
                     else                   monkeModelPlayers.remove(id);
                     MonkeModelS2CPayload sync = new MonkeModelS2CPayload(id, payload.enabled());
-                    for (ServerPlayer p : PlayerLookup.all(context.player().getServer())) {
+                    for (ServerPlayer p : PlayerLookup.all(context.player().level().getServer())) {
                         ServerPlayNetworking.send(p, sync);
                     }
                 });

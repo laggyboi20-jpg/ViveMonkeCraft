@@ -2,8 +2,6 @@ package laggyboi.vivemonkecraft.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
@@ -61,22 +59,23 @@ public final class HandMarkerRenderer {
     // =========================================================================
 
     public static void register() {
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(HandMarkerRenderer::onRender);
+        // 1.21.9 removed Fabric's WorldRenderEvents/WorldRenderContext in the render
+        // rework, so there's no per-frame world hook to register against anymore.
+        // The drawing logic below is preserved; re-enable the markers by calling
+        // renderMarkers(...) from a LevelRenderer mixin once a hook that exposes a
+        // PoseStack + MultiBufferSource + camera is wired up for the new pipeline.
     }
 
     // =========================================================================
-    // Render callback
+    // Render callback — call per frame with the world-render context's pose stack,
+    // buffer source, and camera position. Currently unwired on 1.21.9 (see register).
     // =========================================================================
 
-    private static void onRender(WorldRenderContext ctx) {
+    public static void renderMarkers(PoseStack stack, MultiBufferSource buf, Vec3 cam) {
         if (!VivemonkecraftClient.isEnabled()) return;
         if (!MovementConfig.showHandMarkers) return;
         if (shoulderMain == null || grabMain == null || shoulderOff == null || grabOff == null) return;
-        if (ctx.consumers() == null) return;
-
-        MultiBufferSource buf   = ctx.consumers();
-        PoseStack         stack = ctx.matrixStack();
-        Vec3              cam   = ctx.camera().getPosition();
+        if (buf == null) return;
 
         VertexConsumer lines = buf.getBuffer(RenderType.lines());
 

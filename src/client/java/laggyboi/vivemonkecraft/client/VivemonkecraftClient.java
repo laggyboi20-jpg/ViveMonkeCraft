@@ -89,7 +89,9 @@ public class VivemonkecraftClient implements ClientModInitializer {
             "key.vivemonkecraft.toggle",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_UNKNOWN,
-            KeyMapping.CATEGORY_MISC
+            // 1.21.9 replaced the String category constants (CATEGORY_MISC) with
+            // KeyMapping.Category record objects.
+            KeyMapping.Category.MISC
     ));
 
     public void onInitializeClient() {
