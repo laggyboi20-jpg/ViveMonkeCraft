@@ -12,7 +12,7 @@ optional server companion unlocks it (and lets admins cap it) on dedicated serve
 
 | | |
 |---|---|
-| Minecraft | 1.21.7 |
+| Minecraft | 1.21.8 |
 | Loader | Fabric Loader 0.19.3+ |
 | API | Fabric API |
 | VR | QuestCraft / Vivecraft 1.2.x |
