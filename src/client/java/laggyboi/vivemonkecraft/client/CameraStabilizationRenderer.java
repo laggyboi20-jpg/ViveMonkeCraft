@@ -74,7 +74,6 @@ public final class CameraStabilizationRenderer {
         } else {
             smoothFactor += (rawFactor - smoothFactor) * 0.07f;
         }
-
         if (smoothFactor < 0.01f) return;
 
         // edgeFrac: fraction of the half-screen (0..1) to cover from each edge.
