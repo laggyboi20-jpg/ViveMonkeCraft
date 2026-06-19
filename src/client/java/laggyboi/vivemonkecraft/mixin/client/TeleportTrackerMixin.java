@@ -13,23 +13,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 // =====================================================================
 //
 // Teleporting desyncs Vivecraft's room origin and breaks the gorilla hand physics.
-// The setTeleportOverride / isTeleportEnabled route turned out unreliable (on this
-// build isTeleportEnabled stays true regardless of the override), so we block at the
-// source instead: TeleportTracker.doProcess is what AIMS and EXECUTES the teleport —
-// at runtime it calls LocalPlayer.moveTo(x,y,z) + the teleport step callback. Cancel
-// it at HEAD while gorilla locomotion is on and the player hasn't opted into
-// allowTeleport, so the teleport button does nothing (no aim arc, no move, no desync).
-// With the mod off, or allowTeleport on, doProcess runs normally and teleport works.
+// The setTeleportOverride / isTeleportEnabled route turned out unreliable, so we block
+// at the source instead: TeleportTracker processes teleport input each tick and calls
+// LocalPlayer.moveTo(x,y,z). Cancel at HEAD while gorilla locomotion is on and the
+// player hasn't opted into allowTeleport so the button does nothing.
 //
-// Reflection-target mixin (no Vivecraft compile dependency); require = 0 so it simply
-// no-ops if the class/method isn't present on some Vivecraft version.
+// Vivecraft 1.2.x: method is doProcess(LocalPlayer) — descriptor uses the intermediary
+//   name class_746 because 1.2.x was compiled against intermediary mappings.
+// Vivecraft 1.3.x: doProcess was split into activeProcess(LocalPlayer) /
+//   inactiveProcess(LocalPlayer). We target activeProcess (the one that fires aim + move).
+//
+// Both injections have require = 0 so whichever version is absent simply no-ops.
 // =====================================================================
 @Mixin(targets = "org.vivecraft.client_vr.gameplay.trackers.TeleportTracker", remap = false)
 public class TeleportTrackerMixin {
 
+    // Vivecraft 1.2.x (QuestCraft / QCXR) — intermediary descriptor
     @Inject(method = "doProcess(Lnet/minecraft/class_746;)V",
             at = @At("HEAD"), cancellable = true, require = 0, remap = false)
-    private void vmcTp$blockTeleport(LocalPlayer player, CallbackInfo ci) {
+    private void vmcTp$blockTeleportLegacy(LocalPlayer player, CallbackInfo ci) {
+        if (VivemonkecraftClient.isEnabled() && !MovementConfig.allowTeleport) {
+            ci.cancel();
+        }
+    }
+
+    // Vivecraft 1.3.x (PCVR / 1.21.8+) — Mojmap descriptor
+    @Inject(method = "activeProcess(Lnet/minecraft/client/player/LocalPlayer;)V",
+            at = @At("HEAD"), cancellable = true, require = 0, remap = false)
+    private void vmcTp$blockTeleportPublic(LocalPlayer player, CallbackInfo ci) {
         if (VivemonkecraftClient.isEnabled() && !MovementConfig.allowTeleport) {
             ci.cancel();
         }

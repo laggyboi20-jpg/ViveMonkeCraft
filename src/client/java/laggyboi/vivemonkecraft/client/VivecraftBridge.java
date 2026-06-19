@@ -8,21 +8,16 @@ import java.lang.reflect.Method;
 /**
  * Thin, dependency-free adapter over Vivecraft's VR API.
  *
- * <p>Targets <b>Vivecraft 1.2.x / QuestCraft (QCXR)</b>, which uses the internal
- * {@code org.vivecraft.client_vr.*} package (no public API).
+ * <p>Supports two wiring paths, tried in order:
+ * <ol>
+ *   <li><b>PUBLIC (Vivecraft 1.3.x)</b> — {@code org.vivecraft.api.client.VRClientAPI},
+ *       the stable public API introduced in 1.3.0. Used for 1.21.8+ (PCVR only).
+ *   <li><b>LEGACY (Vivecraft 1.2.x / QuestCraft / QCXR)</b> — internal
+ *       {@code org.vivecraft.client_vr.*} reflection. Used for 1.21.4/1.21.5 + QuestCraft.
+ * </ol>
  *
- * <p>Reflection is used so Vivecraft does NOT need to be a compile-time dependency —
- * the mod compiles without Vivecraft on the classpath and falls back gracefully to
- * {@code MISSING} if QuestCraft is not installed.
- *
- * <p>Fields accessed via reflection:
- * <ul>
- *   <li>{@code VRState.VR_RUNNING}          — static boolean, true while VR is active
- *   <li>{@code VRPlayer.get()}              — static factory → VRPlayer instance
- *   <li>{@code VRPlayer#vrdata_world_render}— VRData snapshot used for rendering
- *   <li>{@code VRData#hmd / c0 / c1}        — head / main hand / off-hand device poses
- *   <li>{@code VRDevicePose#getPosition()}  — world-space Vec3 position
- * </ul>
+ * <p>Vivecraft is NOT a compile-time dependency — reflection keeps the mod buildable
+ * and runnable without Vivecraft on the classpath, degrading gracefully to MISSING.
  */
 public final class VivecraftBridge {
 
@@ -33,23 +28,17 @@ public final class VivecraftBridge {
 
     private static final VivecraftBridge INSTANCE = new VivecraftBridge();
 
-    /**
-     * Returns {@code true} when QuestCraft / Vivecraft 1.2.x is present AND
-     * VR is currently active.  Safe to call from any thread; never throws.
-     */
+    /** True when Vivecraft is present AND VR is currently active. Never throws. */
     public static boolean isVrActive() {
         return INSTANCE.isVRActive();
     }
 
     /**
-     * Enable/disable Vivecraft's teleport movement at runtime (not a saved setting).
+     * Enable/disable Vivecraft's teleport movement at runtime.
      * We disable it while gorilla locomotion is active so the teleport button can't
-     * desync the room origin and break our physics. No-op if Vivecraft is absent.
+     * desync the room origin. No-op if Vivecraft is absent.
      */
     public static void setTeleportDisabled(boolean disabled) {
-        // POLARITY: the debug read-back proved teleportOverride is effectively "teleport
-        // ENABLED" — isTeleportEnabled() tracks it (override=true → on, false → off).
-        // So to DISABLE teleport we must pass FALSE, and to allow it, TRUE.
         INSTANCE.setTeleportOverride(!disabled);
     }
 
@@ -57,11 +46,23 @@ public final class VivecraftBridge {
     // Connection lifecycle
     // -----------------------------------------------------------------------
 
-    private enum Link { UNTRIED, LEGACY, MISSING }
+    private enum Link { UNTRIED, PUBLIC, LEGACY, MISSING }
     private Link link = Link.UNTRIED;
 
     // -----------------------------------------------------------------------
-    // Legacy API handles  (Vivecraft 1.2.x / QuestCraft)
+    // Public API handles (Vivecraft 1.3.x — org.vivecraft.api.*)
+    // -----------------------------------------------------------------------
+
+    private Object pubApi;          // VRClientAPI singleton instance
+    private Method mPubIsVRActive;  // VRClientAPI#isVRActive()
+    private Method mPubGetPose;     // VRClientAPI#getWorldRenderPose() → VRPose
+    private Method mPubGetMain;     // VRPose#getMainHand() → VRBodyPartData
+    private Method mPubGetOff;      // VRPose#getOffHand()  → VRBodyPartData
+    private Method mPubGetHead;     // VRPose#getHead()     → VRBodyPartData
+    private Method mPubGetPos;      // VRBodyPartData#getPos() → Vec3
+
+    // -----------------------------------------------------------------------
+    // Legacy API handles (Vivecraft 1.2.x / QCXR — org.vivecraft.client_vr.*)
     // -----------------------------------------------------------------------
 
     private Field  fVrRunning;     // VRState.VR_RUNNING  (static boolean)
@@ -76,23 +77,27 @@ public final class VivecraftBridge {
     // Public accessors
     // -----------------------------------------------------------------------
 
-    /** @return true only when QuestCraft is present AND VR is currently active. */
+    /** @return true only when Vivecraft is present AND VR is currently active. */
     public boolean isVRActive() {
-        if (tryWire() == Link.LEGACY) return legacyIsVRActive();
-        return false;
+        return switch (tryWire()) {
+            case PUBLIC -> pubIsVRActive();
+            case LEGACY -> legacyIsVRActive();
+            default -> false;
+        };
     }
 
     /** World-space position of the right/main-hand controller, or null. */
     public Vec3 getMainHandPos() {
         // While the hand-model clamp is active, the c0 pose has been swapped to the
-        // SURFACE point for rendering — physics must keep seeing the real hand, so
-        // return the raw position stashed by the render mixin before the swap.
-        // (The GT anchor servo NEEDS surface penetration; the clamp is cosmetic.)
+        // SURFACE point for rendering — physics must keep seeing the real hand.
         if (VrHandClamp.clampMain != null && VrHandClamp.rawMain != null) {
             return VrHandClamp.rawMain;
         }
-        if (tryWire() == Link.LEGACY) return legacyPosition(fC0);
-        return null;
+        return switch (tryWire()) {
+            case PUBLIC -> pubPosition(mPubGetMain);
+            case LEGACY -> legacyPosition(fC0);
+            default -> null;
+        };
     }
 
     /** World-space position of the left/off-hand controller, or null. */
@@ -100,19 +105,25 @@ public final class VivecraftBridge {
         if (VrHandClamp.clampOff != null && VrHandClamp.rawOff != null) {
             return VrHandClamp.rawOff;
         }
-        if (tryWire() == Link.LEGACY) return legacyPosition(fC1);
-        return null;
+        return switch (tryWire()) {
+            case PUBLIC -> pubPosition(mPubGetOff);
+            case LEGACY -> legacyPosition(fC1);
+            default -> null;
+        };
     }
 
     /** World-space position of the headset/eyes, or null. */
     public Vec3 getHeadPos() {
-        if (tryWire() == Link.LEGACY) return legacyPosition(fHmd);
-        return null;
+        return switch (tryWire()) {
+            case PUBLIC -> pubPosition(mPubGetHead);
+            case LEGACY -> legacyPosition(fHmd);
+            default -> null;
+        };
     }
 
     // -----------------------------------------------------------------------
-    // Teleport-aim detection (wired separately so a failure here never disables
-    // the core position API above).
+    // Teleport-aim detection — wired separately; a failure here never disables
+    // the core position API above.
     // -----------------------------------------------------------------------
 
     private boolean tpTried  = false;
@@ -122,13 +133,12 @@ public final class VivecraftBridge {
     private Method mIsAiming;              // TeleportTracker#isAiming() → boolean
 
     /**
-     * True while the player is holding the teleport button (Vivecraft's teleport-aim
+     * True while the player is holding the teleport button (Vivecraft teleport-aim
      * mode). During it Vivecraft freezes the hand/room pose, so our locomotion would
-     * anchor to a stale hand and slide in place — the caller should go inert. Never
-     * throws; returns false if Vivecraft isn't present or the internals differ.
+     * anchor to a stale hand. Never throws; returns false if unavailable.
      */
     public boolean isTeleportAiming() {
-        if (tpBroken) return false;
+        if (tpBroken || tryWire() == Link.MISSING) return false;
         try {
             if (!tpTried) {
                 tpTried = true;
@@ -157,22 +167,24 @@ public final class VivecraftBridge {
     private Method  mSnapOrigin; // VRPlayer#snapRoomOriginToPlayerEntity(Entity,boolean,boolean)
 
     /**
-     * Force Vivecraft's room origin to re-sync to the player entity — the fix for a
-     * teleport leaving the origin behind (you slide in place / can't push afterwards).
-     * Args (false, true) mirror Vivecraft's own JumpTracker re-sync. Call ONLY right
-     * after a teleport, never every tick — it cancels roomscale walking otherwise.
+     * Force Vivecraft's room origin to re-sync to the player entity — fixes a
+     * teleport leaving the origin behind. Args (false, true) mirror Vivecraft's
+     * own JumpTracker re-sync. Call ONLY right after a teleport.
      */
     public void snapRoomOriginToPlayer(net.minecraft.world.entity.Entity player) {
-        if (snapBroken || player == null || tryWire() != Link.LEGACY) return;
+        if (snapBroken || player == null || tryWire() == Link.MISSING) return;
         try {
             if (!snapTried) {
                 snapTried = true;
-                Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
-                mSnapOrigin = vrPlayer.getMethod("snapRoomOriginToPlayerEntity",
+                Class<?> vrPlayerCls = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
+                mSnapOrigin = vrPlayerCls.getMethod("snapRoomOriginToPlayerEntity",
                         net.minecraft.world.entity.Entity.class, boolean.class, boolean.class);
+                if (mVrPlayerGet == null) {
+                    mVrPlayerGet = vrPlayerCls.getMethod("get");
+                }
                 VmcDebugLog.log("snapRoomOriginToPlayer wired OK");
             }
-            Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
+            Object vp = mVrPlayerGet.invoke(null);
             if (vp != null) mSnapOrigin.invoke(vp, player, false, true);
             else VmcDebugLog.log("snapRoomOriginToPlayer: VRPlayer.get() returned null");
         } catch (Throwable t) {
@@ -186,34 +198,34 @@ public final class VivecraftBridge {
     private Method  mSetTeleportOverride; // VRPlayer#setTeleportOverride(boolean)
     private Method  mUpdateTeleportKeys;  // VRPlayer#updateTeleportKeys()
     private Method  mIsTeleportEnabled;   // VRPlayer#isTeleportEnabled()
-    private Boolean tpoLast = null;       // last override value, for change-only logging
+    private Boolean tpoLast = null;
 
     /**
-     * Set Vivecraft's teleport override and IMMEDIATELY re-apply it. Setting the flag
-     * alone does nothing live — Vivecraft only pushes isTeleportEnabled() onto the
-     * teleport input actions inside updateTeleportKeys(), which normally runs only at
-     * init/settings-change. updateTeleportKeys() just calls setEnabled() on the two
-     * teleport actions (no side effects), so we call it here to make the change stick.
+     * Set Vivecraft's teleport override and immediately re-apply it.
+     * Setting the flag alone does nothing live — updateTeleportKeys() pushes it
+     * onto the input actions. No-op when Vivecraft isn't present.
      */
     public void setTeleportOverride(boolean override) {
-        if (tpoBroken || tryWire() != Link.LEGACY) return;
+        if (tpoBroken || tryWire() == Link.MISSING) return;
         try {
             if (!tpoTried) {
                 tpoTried = true;
-                Class<?> vrPlayer = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
-                mSetTeleportOverride = vrPlayer.getMethod("setTeleportOverride", boolean.class);
-                mUpdateTeleportKeys  = vrPlayer.getMethod("updateTeleportKeys");
-                mIsTeleportEnabled   = vrPlayer.getMethod("isTeleportEnabled");
+                Class<?> vrPlayerCls = Class.forName("org.vivecraft.client_vr.gameplay.VRPlayer");
+                mSetTeleportOverride = vrPlayerCls.getMethod("setTeleportOverride", boolean.class);
+                mUpdateTeleportKeys  = vrPlayerCls.getMethod("updateTeleportKeys");
+                mIsTeleportEnabled   = vrPlayerCls.getMethod("isTeleportEnabled");
+                if (mVrPlayerGet == null) {
+                    mVrPlayerGet = vrPlayerCls.getMethod("get");
+                }
                 VmcDebugLog.event("VR", "teleport-override reflection wired OK");
             }
-            Object vp = mVrPlayerGet.invoke(null); // static VRPlayer.get()
+            Object vp = mVrPlayerGet.invoke(null);
             if (vp == null) {
                 if (!Boolean.FALSE.equals(tpoLast)) VmcDebugLog.event("VR", "setTeleportOverride: VRPlayer.get() null");
                 return;
             }
             mSetTeleportOverride.invoke(vp, override);
-            mUpdateTeleportKeys.invoke(vp);   // re-apply to the input actions NOW
-            // Log only when the value changes, with a read-back proving it took effect.
+            mUpdateTeleportKeys.invoke(vp);
             if (tpoLast == null || tpoLast != override) {
                 tpoLast = override;
                 Object enabledNow = mIsTeleportEnabled.invoke(vp);
@@ -227,17 +239,60 @@ public final class VivecraftBridge {
     }
 
     // -----------------------------------------------------------------------
-    // Wire-up — idempotent after first attempt
+    // Wire-up — idempotent after first successful connection
     // -----------------------------------------------------------------------
 
     private Link tryWire() {
         if (link != Link.UNTRIED) return link;
-        link = wireLegacy();
-        return link;
+
+        // Try public API first (Vivecraft 1.3.x, preferred)
+        Link pub = wirePublic();
+        if (pub == Link.PUBLIC) { link = Link.PUBLIC; return link; }
+        if (pub == Link.MISSING) {
+            // Public classes absent → try legacy immediately
+            link = wireLegacy();
+            return link;
+        }
+        // pub == UNTRIED means instance() returned null → VR not initialized yet,
+        // retry next call without permanently setting a state.
+        return Link.UNTRIED;
     }
 
     // -----------------------------------------------------------------------
-    // Legacy wiring (1.2.x — QuestCraft / QCXR)
+    // Public-API wiring (Vivecraft 1.3.x)
+    // -----------------------------------------------------------------------
+
+    private Link wirePublic() {
+        try {
+            Class<?> apiCls  = Class.forName("org.vivecraft.api.client.VRClientAPI");
+            Class<?> poseCls = Class.forName("org.vivecraft.api.data.VRPose");
+            Class<?> partCls = Class.forName("org.vivecraft.api.data.VRBodyPartData");
+
+            Object inst = apiCls.getMethod("instance").invoke(null);
+            if (inst == null) return Link.UNTRIED; // VR not initialized yet — retry next frame
+
+            mPubIsVRActive = apiCls.getMethod("isVRActive");
+            mPubGetPose    = apiCls.getMethod("getWorldRenderPose");
+            mPubGetMain    = poseCls.getMethod("getMainHand");
+            mPubGetOff     = poseCls.getMethod("getOffHand");
+            mPubGetHead    = poseCls.getMethod("getHead");
+            mPubGetPos     = partCls.getMethod("getPos");
+            pubApi         = inst;
+
+            System.out.println("[ViveMonkeCraft] Vivecraft public API connected (1.3.x)");
+            return Link.PUBLIC;
+
+        } catch (ClassNotFoundException e) {
+            // Not Vivecraft 1.3.x — fall through to legacy
+            return Link.MISSING;
+        } catch (ReflectiveOperationException e) {
+            System.out.println("[ViveMonkeCraft] Vivecraft public API present but unusable: " + e);
+            return Link.MISSING;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Legacy wiring (Vivecraft 1.2.x / QuestCraft / QCXR)
     // -----------------------------------------------------------------------
 
     private Link wireLegacy() {
@@ -255,15 +310,40 @@ public final class VivecraftBridge {
             fC1           = vrDataType.getField("c1");
             mGetPosition  = vrDevicePoseType.getMethod("getPosition");
 
-            System.out.println("[ViveMonkeCraft] QuestCraft API connected (Vivecraft 1.2.x / QCXR)");
+            System.out.println("[ViveMonkeCraft] Vivecraft legacy API connected (1.2.x / QCXR)");
             return Link.LEGACY;
 
         } catch (ClassNotFoundException e) {
-            System.out.println("[ViveMonkeCraft] QuestCraft not found — mod requires QuestCraft / Vivecraft 1.2.x.");
+            System.out.println("[ViveMonkeCraft] Vivecraft not found — VR features unavailable.");
             return Link.MISSING;
         } catch (ReflectiveOperationException e) {
-            System.out.println("[ViveMonkeCraft] QuestCraft API present but unusable: " + e);
+            System.out.println("[ViveMonkeCraft] Vivecraft API present but unusable: " + e);
             return Link.MISSING;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Public-API data accessors
+    // -----------------------------------------------------------------------
+
+    private boolean pubIsVRActive() {
+        try {
+            return Boolean.TRUE.equals(mPubIsVRActive.invoke(pubApi));
+        } catch (ReflectiveOperationException e) {
+            return false;
+        }
+    }
+
+    private Vec3 pubPosition(Method partGetter) {
+        try {
+            Object pose = mPubGetPose.invoke(pubApi);
+            if (pose == null) return null;
+            Object part = partGetter.invoke(pose);
+            if (part == null) return null;
+            Object pos  = mPubGetPos.invoke(part);
+            return (pos instanceof Vec3) ? (Vec3) pos : null;
+        } catch (ReflectiveOperationException e) {
+            return null;
         }
     }
 
@@ -281,7 +361,7 @@ public final class VivecraftBridge {
 
     private Vec3 legacyPosition(Field devicePoseField) {
         try {
-            Object vrPlayer   = mVrPlayerGet.invoke(null); // static
+            Object vrPlayer   = mVrPlayerGet.invoke(null);
             if (vrPlayer == null) return null;
             Object vrData     = fVrDataRender.get(vrPlayer);
             if (vrData == null) return null;
