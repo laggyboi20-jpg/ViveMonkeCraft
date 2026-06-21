@@ -1511,12 +1511,18 @@ public class GorillaLocomotionHandler {
 
     // Blocks that hands cannot grip at all. Routes through isTouchingAABB so it
     // covers every face (wall, floor, ceiling) with a single check.
-    //   Barrier — server admin block; the mod treats it as invisible so operators
-    //             can fence off areas this mod cannot bypass.
+    //   Barrier     — server admin block; the mod treats it as invisible so operators
+    //                 can fence off areas this mod cannot bypass.
+    //   Leaf litter — thin ground-cover decoration (added in 1.21.5). It has a tiny
+    //                 collision shape your hand catches on whenever you reach to the
+    //                 floor, snagging locomotion on something you can't actually grab.
+    //                 Make it pass-through for the HANDS only — the player body still
+    //                 sees vanilla's real collision (this list is checked solely by the
+    //                 grab detection, never by the movement/body collision path).
     // NOTE: ice is NOT listed here — ice DOES allow a brief first-contact grip so
     //       the push-off impulse path (above) can fire. Ice just can't be sustained.
     private static boolean isUngrabbable(BlockState bs) {
-        return bs.is(Blocks.BARRIER);
+        return bs.is(Blocks.BARRIER) || bs.is(Blocks.LEAF_LITTER);
     }
 
     // -----------------------------------------------------------------------
