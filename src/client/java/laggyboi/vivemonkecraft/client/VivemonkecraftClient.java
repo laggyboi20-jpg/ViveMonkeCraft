@@ -178,7 +178,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                                 handler.onDisable(context.client());
                             }
                             if (context.client().player != null) {
-                                context.client().gui.setOverlayMessage(
+                                context.client().gui.hud.setOverlayMessage(
                                     Component.literal("§e[ViveMonkeCraft] §cDisabled by server"),
                                     false
                                 );
@@ -253,7 +253,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                                 String value = StringArgumentType.getString(ctx, "value");
                                 String result = MovementConfig.setByName(name, value);
                                 if (mc.player != null) {
-                                    mc.gui.setOverlayMessage(Component.literal(
+                                    mc.gui.hud.setOverlayMessage(Component.literal(
                                         result != null
                                             ? "§e[ViveMonkeCraft] §f" + result
                                             : "§c[ViveMonkeCraft] §fUnknown setting or bad value: "
@@ -275,7 +275,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                             if (mc.player == null || !mc.player.permissions().hasPermission(
                                     net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
                                 if (mc.player != null) {
-                                    mc.gui.setOverlayMessage(
+                                    mc.gui.hud.setOverlayMessage(
                                         Component.literal("§c[ViveMonkeCraft] §fNeed operator access to change gravity"),
                                         false
                                     );
@@ -285,7 +285,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
                             double level = DoubleArgumentType.getDouble(ctx, "level");
                             MovementConfig.gravityMultiplier = level;
                             MovementConfig.save();
-                            mc.gui.setOverlayMessage(
+                            mc.gui.hud.setOverlayMessage(
                                 Component.literal("§e[ViveMonkeCraft] §fGravity: §b" + level
                                     + (level == 0.0 ? " §7(zero-G)" : level == 1.0 ? " §7(normal)" : "")),
                                 false
@@ -408,7 +408,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
             // gorilla locomotion must not move the player. Drop all grips the
             // moment a screen opens, and stay fully inert until it closes — the
             // next tick after closing resumes normally.
-            if (client.screen != null) {
+            if (client.gui.screen() != null) {
                 if (!wasInGui) {
                     wasInGui = true;
                     handler.onGuiPause(client);
@@ -505,7 +505,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         // companion mod, refuse every enable attempt — keybind, /vmc on, auto-start.
         if (on && !serverAuthorized(client)) {
             if (client.player != null) {
-                client.gui.setOverlayMessage(
+                client.gui.hud.setOverlayMessage(
                     Component.literal("§e[ViveMonkeCraft] §cThis server doesn't run the monke-server mod"),
                     false
                 );
@@ -517,7 +517,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         // attempt to enable it — keybind, /vmc on, or auto-start all end up here.
         if (on && !ServerLimits.modEnabled) {
             if (client.player != null) {
-                client.gui.setOverlayMessage(
+                client.gui.hud.setOverlayMessage(
                     Component.literal("§e[ViveMonkeCraft] §cDisabled by server"),
                     false
                 );
@@ -542,7 +542,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
 
             String state = on ? "§aON" : "§cOFF";
             // Show in the action bar (overlay message).
-            client.gui.setOverlayMessage(
+            client.gui.hud.setOverlayMessage(
                 Component.literal("§e[ViveMonkeCraft] §fGorilla Locomotion: " + state),
                 false
             );
@@ -553,7 +553,7 @@ public class VivemonkecraftClient implements ClientModInitializer {
         MovementConfig.load();
         Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
-            client.gui.setOverlayMessage(
+            client.gui.hud.setOverlayMessage(
                 Component.literal("§e[ViveMonkeCraft] §fConfig reloaded"),
                 false
             );
