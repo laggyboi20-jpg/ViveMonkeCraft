@@ -7,8 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,14 +26,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 // YOUR player and only while the mod is on, scale the HEIGHT down.
 // =====================================================================
 
-// TARGET: Player#getDefaultDimensions — NOT Entity#getDimensions! Since 1.20.5,
+// TARGET: LivingEntity#getDefaultDimensions — NOT Entity#getDimensions! Since 1.20.5,
 // LivingEntity overrides getDimensions() as getDefaultDimensions(pose).scale(getScale())
 // without calling super, so an Entity.getDimensions injection NEVER RUNS for
 // players (it was silently dead — and exactly why only the SCALE attribute,
 // which feeds getScale(), ever managed to shrink the box).
+//
+// WHY LivingEntity AND NOT Player: through 1.21.8, Player OVERRODE
+// getDefaultDimensions, so we targeted Player.class. In 1.21.9 Player DROPPED that
+// override and now inherits LivingEntity's — so a Player.class injection finds no
+// method (require=0 → silently no-ops), which is why the Real Monke 0.5 shrink went
+// dead on 1.21.9+. Targeting LivingEntity catches the inherited method that players
+// actually run. The body gates on instanceof LocalPlayer/ServerPlayer and returns
+// early for every other LivingEntity, so non-players are untouched.
 // priority 2000 (default 1000): Vivecraft also manages player sizing/poses —
 // applying later means OUR setReturnValue runs last and wins.
-@Mixin(value = Player.class, priority = 2000)
+@Mixin(value = LivingEntity.class, priority = 2000)
 public class PlayerHitboxMixin {
 
     // require = 0 -> if Mojang renames this in a future version, we just skip the
