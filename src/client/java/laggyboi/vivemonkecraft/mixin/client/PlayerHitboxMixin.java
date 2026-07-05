@@ -50,13 +50,16 @@ public class PlayerHitboxMixin {
     @org.spongepowered.asm.mixin.Unique
     private static long vmc$lastEntryMs = 0L;
 
-    // require = 0 -> if Mojang renames this in a future version, we just skip the
-    // shrink instead of crashing.
+    // DIAGNOSTIC: target getDimensions (public final on LivingEntity, definitely called
+    // for players) instead of the protected getDefaultDimensions, which was silently
+    // failing to apply on 26.2. require = 1 TEMPORARILY so any apply failure crashes
+    // LOUDLY with the exact reason instead of being hidden — revert to require = 0 once
+    // this is confirmed working.
     @Inject(
-        method = "getDefaultDimensions(Lnet/minecraft/world/entity/Pose;)Lnet/minecraft/world/entity/EntityDimensions;",
+        method = "getDimensions(Lnet/minecraft/world/entity/Pose;)Lnet/minecraft/world/entity/EntityDimensions;",
         at = @At("RETURN"),
         cancellable = true,
-        require = 0
+        require = 1
     )
     private void vmc$shrinkHitbox(Pose pose, CallbackInfoReturnable<EntityDimensions> cir) {
         // Apply to the local player on BOTH logical sides of this JVM:
