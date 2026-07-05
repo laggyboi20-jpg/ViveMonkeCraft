@@ -229,6 +229,18 @@ public class GorillaLocomotionHandler {
             return;
         }
 
+        // LADDER / VINE GUARD: while the player is on a climbable (ladder, vine,
+        // scaffolding, ...), the mod's hand grabs latch onto the ladder block and fight
+        // vanilla's climb controls, making climbing feel clunky. Go fully inert so
+        // vanilla climbing takes over — the hands stop grabbing and hand physics resumes
+        // the instant you step off the ladder. onClimbable() is vanilla LivingEntity API,
+        // true whenever the player occupies a climbable block.
+        if (player.onClimbable()) {
+            onGuiPause(client);
+            prevTickVel = player.getDeltaMovement();
+            return;
+        }
+
         // TELEPORT-AIM GUARD: while the teleport button is held, Vivecraft freezes the
         // hand/room pose. If we kept processing we'd anchor to the stale hand and slide
         // in place. Go fully inert (drop grips, stop mining, restore gravity).
