@@ -44,9 +44,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = LivingEntity.class, priority = 2000)
 public class PlayerHitboxMixin {
 
-    // Throttle for the diagnostic HITBOX log (see below) — once per second.
+    // Throttles for the diagnostic HITBOX logs (see below) — once per second each.
     @org.spongepowered.asm.mixin.Unique
     private static long vmc$lastLogMs = 0L;
+    @org.spongepowered.asm.mixin.Unique
+    private static long vmc$lastEntryMs = 0L;
 
     // require = 0 -> if Mojang renames this in a future version, we just skip the
     // shrink instead of crashing.
@@ -80,6 +82,23 @@ public class PlayerHitboxMixin {
         }
 
         if (own) {
+            // DIAGNOSTIC (debug log only): fires EVERY time getDefaultDimensions runs for
+            // our own player, BEFORE any enabled/config gate. If you enable debug logging
+            // and see NO "getDefaultDimensions RAN" lines at all, the mixin is NOT being
+            // applied to LivingEntity at runtime (the real problem). If you DO see them
+            // but never a "shrink FIRED" line, the mixin runs but the enabled/config gate
+            // is stopping the shrink. Throttled to once per second.
+            long entryNow = System.currentTimeMillis();
+            if (MovementConfig.debugLogging && entryNow - vmc$lastEntryMs > 1000L) {
+                vmc$lastEntryMs = entryNow;
+                laggyboi.vivemonkecraft.client.VmcDebugLog.event("HITBOX",
+                    "getDefaultDimensions RAN for own player (mixin IS applied) side="
+                    + (self instanceof ServerPlayer ? "server" : "client")
+                    + " enabled=" + VivemonkecraftClient.isEnabled()
+                    + " realMonke=" + MovementConfig.realMonke
+                    + " scale=" + MovementConfig.hitboxHeightScale + " pose=" + pose);
+            }
+
             // Only while the mod is on.
             if (!VivemonkecraftClient.isEnabled()) return;
 
