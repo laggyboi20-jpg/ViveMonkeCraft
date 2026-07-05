@@ -26,19 +26,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 // YOUR player and only while the mod is on, scale the HEIGHT down.
 // =====================================================================
 
-// TARGET: LivingEntity#getDefaultDimensions — NOT Entity#getDimensions! Since 1.20.5,
-// LivingEntity overrides getDimensions() as getDefaultDimensions(pose).scale(getScale())
-// without calling super, so an Entity.getDimensions injection NEVER RUNS for
-// players (it was silently dead — and exactly why only the SCALE attribute,
-// which feeds getScale(), ever managed to shrink the box).
+// TARGET: LivingEntity#getDimensions(Pose) — the public final method that returns
+// getDefaultDimensions(pose).scale(getScale()). Injecting at its RETURN lets us shrink
+// the FINAL box for players.
 //
-// WHY LivingEntity AND NOT Player: through 1.21.8, Player OVERRODE
-// getDefaultDimensions, so we targeted Player.class. In 1.21.9 Player DROPPED that
-// override and now inherits LivingEntity's — so a Player.class injection finds no
-// method (require=0 → silently no-ops), which is why the Real Monke 0.5 shrink went
-// dead on 1.21.9+. Targeting LivingEntity catches the inherited method that players
-// actually run. The body gates on instanceof LocalPlayer/ServerPlayer and returns
-// early for every other LivingEntity, so non-players are untouched.
+// WHY THIS TARGET (two version breaks led here):
+//   1) Through 1.21.8 we targeted Player#getDefaultDimensions. In 1.21.9 Player DROPPED
+//      that override (it now inherits LivingEntity's), so a Player.class injection found
+//      no method and the Real Monke 0.5 shrink went dead on 1.21.9+.
+//   2) Retargeting to LivingEntity#getDefaultDimensions (protected) STILL silently failed
+//      to apply on 26.2's deobfuscated runtime — the injection never attached. Switching
+//      to LivingEntity#getDimensions (public final, always called for players via
+//      refreshDimensions) applies cleanly and is confirmed working in VR.
+//   NOTE: an Entity#getDimensions injection would NOT run for players (LivingEntity
+//   overrides getDimensions without calling super) — we target LivingEntity's OWN
+//   override, which players actually run.
+//
+// The body gates on instanceof LocalPlayer/ServerPlayer and returns early for every
+// other LivingEntity, so non-players are untouched.
 // priority 2000 (default 1000): Vivecraft also manages player sizing/poses —
 // applying later means OUR setReturnValue runs last and wins.
 @Mixin(value = LivingEntity.class, priority = 2000)
@@ -47,7 +52,7 @@ public class PlayerHitboxMixin {
     // require = 0 -> if Mojang renames this in a future version, we just skip the
     // shrink instead of crashing.
     @Inject(
-        method = "getDefaultDimensions(Lnet/minecraft/world/entity/Pose;)Lnet/minecraft/world/entity/EntityDimensions;",
+        method = "getDimensions(Lnet/minecraft/world/entity/Pose;)Lnet/minecraft/world/entity/EntityDimensions;",
         at = @At("RETURN"),
         cancellable = true,
         require = 0
