@@ -44,6 +44,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = LivingEntity.class, priority = 2000)
 public class PlayerHitboxMixin {
 
+    // Throttle for the diagnostic HITBOX log (see below) — once per second.
+    @org.spongepowered.asm.mixin.Unique
+    private static long vmc$lastLogMs = 0L;
+
     // require = 0 -> if Mojang renames this in a future version, we just skip the
     // shrink instead of crashing.
     @Inject(
@@ -97,7 +101,22 @@ public class PlayerHitboxMixin {
             }
 
             if (dims != original) {
-                cir.setReturnValue(vmc$collisionOnly(dims, original));
+                EntityDimensions out = vmc$collisionOnly(dims, original);
+                cir.setReturnValue(out);
+                // DIAGNOSTIC (debug log only): proves the shrink mixin is actually firing
+                // and what height it produces. Throttled to once per second so it doesn't
+                // flood the log. If you enable debug logging, toggle Real Monke, and see
+                // NO "HITBOX shrink" lines, the mixin isn't applying (stale jar / not
+                // installed). If you see them but tunnels still fail, the box is fine and
+                // the problem is elsewhere (server-side validation, camera, etc.).
+                long now = System.currentTimeMillis();
+                if (MovementConfig.debugLogging && now - vmc$lastLogMs > 1000L) {
+                    vmc$lastLogMs = now;
+                    laggyboi.vivemonkecraft.client.VmcDebugLog.event("HITBOX",
+                        "shrink FIRED side=" + (self instanceof ServerPlayer ? "server" : "client")
+                        + " pose=" + pose + " realMonke=" + MovementConfig.realMonke
+                        + " origH=" + original.height() + " -> newH=" + out.height());
+                }
             }
             return;
         }
