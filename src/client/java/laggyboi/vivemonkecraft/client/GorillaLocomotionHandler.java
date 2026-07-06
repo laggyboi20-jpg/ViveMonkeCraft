@@ -229,17 +229,12 @@ public class GorillaLocomotionHandler {
             return;
         }
 
-        // LADDER / VINE GUARD: while the player is on a climbable (ladder, vine,
-        // scaffolding, ...), the mod's hand grabs latch onto the ladder block and fight
-        // vanilla's climb controls, making climbing feel clunky. Go fully inert so
-        // vanilla climbing takes over — the hands stop grabbing and hand physics resumes
-        // the instant you step off the ladder. onClimbable() is vanilla LivingEntity API,
-        // true whenever the player occupies a climbable block.
-        if (player.onClimbable()) {
-            onGuiPause(client);
-            prevTickVel = player.getDeltaMovement();
-            return;
-        }
+        // LADDERS / VINES are handled NOT by going inert here, but by making climbable
+        // blocks pass-through for the HANDS in isUngrabbable() below. That way the mod
+        // never grabs the ladder (so it can't fight the climb), yet the rest of gorilla
+        // locomotion stays fully live: floor-pushing still works when you're in front of
+        // or standing at a ladder, and Vivecraft's own ladder climbing (its climbey-claw
+        // hand grab, a separate system the mod never touches) keeps working on top.
 
         // TELEPORT-AIM GUARD: while the teleport button is held, Vivecraft freezes the
         // hand/room pose. If we kept processing we'd anchor to the stale hand and slide
@@ -931,6 +926,9 @@ public class GorillaLocomotionHandler {
         }
         HandMarkerRenderer.grippingOff  = offHand.gripping;
 
+        // Emit the hand-marker particles for this tick (no-op unless showHandMarkers).
+        HandMarkerRenderer.emit(client);
+
         // ---- TOOL-TOUCH MINING ----
         // Break the block the MAIN hand touches — but only while holding the tool
         // MEANT for it (getDestroySpeed > 1). Bare hands / wrong tools just grab, so
@@ -1000,7 +998,12 @@ public class GorillaLocomotionHandler {
                                         BlockHitResult hitMain, boolean mainTouching, Vec3 mainVel,
                                         BlockHitResult hitOff,  boolean offTouching,  Vec3 offVel) {
         MultiPlayerGameMode gm = client.gameMode;
-        if (gm == null || client.level == null || !MovementConfig.punchMining) {
+        // CREATIVE: punch mining is OFF. In creative every block instant-breaks, so any
+        // hand that brushes a block while you climb or push would destroy the world out
+        // from under you — making it very hard to move. Use normal creative controls to
+        // build/break instead. instabuild = the creative "break instantly" ability.
+        if (gm == null || client.level == null || !MovementConfig.punchMining
+                || player.getAbilities().instabuild) {
             stopMining(client);
             return;
         }
@@ -1022,7 +1025,7 @@ public class GorillaLocomotionHandler {
                 gm.continueDestroyBlock(pos, face);
             } else {
                 if (miningPos != null) gm.stopDestroyBlock();
-                gm.startDestroyBlock(pos, face);  // instant-breaks soft/creative blocks
+                gm.startDestroyBlock(pos, face);  // instant-breaks soft blocks
                 miningPos = pos;
                 if (VmcDebugLog.on()) VmcDebugLog.event("MINE",
                         "start " + pos + " " + client.level.getBlockState(pos).getBlock());
@@ -1534,7 +1537,13 @@ public class GorillaLocomotionHandler {
     // NOTE: ice is NOT listed here — ice DOES allow a brief first-contact grip so
     //       the push-off impulse path (above) can fire. Ice just can't be sustained.
     private static boolean isUngrabbable(BlockState bs) {
-        return bs.is(Blocks.BARRIER) || bs.is(Blocks.LEAF_LITTER);
+        // Ladders, vines, scaffolding, cave/weeping/twisting vines (the CLIMBABLE tag):
+        // pass-through for the hands so gorilla physics never latches onto the ladder and
+        // fights the climb. Vivecraft's own ladder climbing is a separate system and is
+        // unaffected; floor-pushing on nearby solid blocks still works normally.
+        return bs.is(Blocks.BARRIER)
+                || bs.is(Blocks.LEAF_LITTER)
+                || bs.is(net.minecraft.tags.BlockTags.CLIMBABLE);
     }
 
     // -----------------------------------------------------------------------
