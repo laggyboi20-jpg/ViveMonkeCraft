@@ -362,7 +362,7 @@ public final class MovementConfig {
         maxArmLength        = 3.0;
         handRadius          = 0.12;
         hitboxHeightScale   = 0.25;
-        stepAssist          = false;
+        stepAssist          = true;
         stepTeleport        = true;
         stepHeight          = 1.0;
         maxJumpSpeed        = 1.0;
