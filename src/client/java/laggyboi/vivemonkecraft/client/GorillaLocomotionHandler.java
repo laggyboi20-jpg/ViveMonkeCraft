@@ -926,6 +926,9 @@ public class GorillaLocomotionHandler {
         }
         HandMarkerRenderer.grippingOff  = offHand.gripping;
 
+        // Emit the hand-marker particles for this tick (no-op unless showHandMarkers).
+        HandMarkerRenderer.emit(client);
+
         // ---- TOOL-TOUCH MINING ----
         // Break the block the MAIN hand touches — but only while holding the tool
         // MEANT for it (getDestroySpeed > 1). Bare hands / wrong tools just grab, so
