@@ -995,7 +995,12 @@ public class GorillaLocomotionHandler {
                                         BlockHitResult hitMain, boolean mainTouching, Vec3 mainVel,
                                         BlockHitResult hitOff,  boolean offTouching,  Vec3 offVel) {
         MultiPlayerGameMode gm = client.gameMode;
-        if (gm == null || client.level == null || !MovementConfig.punchMining) {
+        // CREATIVE: punch mining is OFF. In creative every block instant-breaks, so any
+        // hand that brushes a block while you climb or push would destroy the world out
+        // from under you — making it very hard to move. Use normal creative controls to
+        // build/break instead. instabuild = the creative "break instantly" ability.
+        if (gm == null || client.level == null || !MovementConfig.punchMining
+                || player.getAbilities().instabuild) {
             stopMining(client);
             return;
         }
@@ -1013,15 +1018,7 @@ public class GorillaLocomotionHandler {
         if (target != null) {
             BlockPos pos = target.getBlockPos();
             Direction face = target.getDirection();
-            // CREATIVE: break the block directly and instantly. The start/continue path
-            // is meant to instant-break in creative too, but drive it explicitly here so
-            // creative punch-mining can never depend on progressive-mining state.
-            if (player.getAbilities().instabuild) {
-                gm.destroyBlock(pos);
-                if (VmcDebugLog.on()) VmcDebugLog.event("MINE",
-                        "creative break " + pos + " " + client.level.getBlockState(pos).getBlock());
-                miningPos = null;
-            } else if (pos.equals(miningPos)) {
+            if (pos.equals(miningPos)) {
                 gm.continueDestroyBlock(pos, face);
             } else {
                 if (miningPos != null) gm.stopDestroyBlock();
@@ -1052,20 +1049,11 @@ public class GorillaLocomotionHandler {
         BlockState state = client.level.getBlockState(hit.getBlockPos());
         if (state.isAir()) return null;
         boolean toolOk = MovementConfig.punchMiningNoTool || tool.getDestroySpeed(state) > 1.0f;
+        if (!toolOk) return null;
         Direction face = hit.getDirection();
         Vec3 n = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
         double inward = -handVel.dot(n);
-        boolean punched = inward > MovementConfig.punchMiningThreshold;
-        // DIAGNOSTIC (debug log only): why a touching hand did/didn't count as a punch.
-        // Reveals whether creative "not mining" is a tool gate (toolOk=false) or a
-        // too-gentle contact (inward below threshold).
-        if (VmcDebugLog.on() && !(toolOk && punched)) {
-            VmcDebugLog.event("MINE", String.format(
-                "reject %s toolOk=%b inward=%.3f thr=%.3f noTool=%b",
-                state.getBlock(), toolOk, inward, MovementConfig.punchMiningThreshold,
-                MovementConfig.punchMiningNoTool));
-        }
-        return (toolOk && punched) ? hit : null;
+        return (inward > MovementConfig.punchMiningThreshold) ? hit : null;
     }
 
     // -----------------------------------------------------------------------
