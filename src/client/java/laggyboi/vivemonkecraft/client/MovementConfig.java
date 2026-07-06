@@ -285,6 +285,12 @@ public final class MovementConfig {
     // true/false.
     public static boolean allowTeleport = false;
 
+    // ACTIVE PRESET — the name of the last preset applied from the Mod Menu screen
+    // (or "Default" on first run). The ModMenu reset buttons resolve their target
+    // values from THIS preset, and the screen shows it so players know what "reset"
+    // will do. Persisted like any other setting. Not a gameplay value.
+    public static String activePreset = "Default";
+
 
     // NOTE: presets live in ModMenuIntegration (the Mod Menu config screen) — the
     // old in-class preset system was unused and has been removed.
@@ -356,7 +362,7 @@ public final class MovementConfig {
         maxArmLength        = 3.0;
         handRadius          = 0.12;
         hitboxHeightScale   = 0.25;
-        stepAssist          = false;
+        stepAssist          = true;
         stepTeleport        = true;
         stepHeight          = 1.0;
         maxJumpSpeed        = 1.0;
@@ -374,6 +380,55 @@ public final class MovementConfig {
         vanillaIceFriction  = false;
         debugLogging        = false;
         allowTeleport       = false;
+        // Fields the flavour presets don't individually tune — set here too so
+        // "Default" is a COMPLETE spec and every ModMenu reset button resolves to a
+        // real value (not "whatever it happened to be").
+        floorStickiness     = 1.0;
+        maxArmLength        = 3.0;
+        velocityHistorySize = 6;
+        cameraStabEnabled   = true;
+        cameraStabStrength  = 0.65;
+        gripSmoothing       = 0.5;
+        gtDragGain          = 0.30;
+        gtUnstickDistance   = 1.0;
+        gtIceSlip           = 0.95;
+        gtPushStrength      = 1.0;
+        cameraHeightOffset  = 0.0;
+        clampHandModels     = true;
+        iceFloorWallLogic   = false;
+        modelTorsoOffsetY   = 0.0;
+        modelTorsoScaleY    = 0.75;
+        modelArmsOffsetY    = 0.0;
+        modelArmsPitch      = 0.0;
+        modelHeadOffsetY    = 0.0;
+        modelHeadPitch      = 0.0;
+    }
+
+    // -----------------------------------------------------------------------
+    // Snapshot / restore — capture every tunable field into a map and put it back.
+    // Used by the Mod Menu screen to compute each reset button's target: it applies
+    // the active preset to read its values, then restores the player's real values.
+    // Reflection over the public static fields keeps this maintenance-free as
+    // settings are added. Skips the private version constant (not public).
+    // -----------------------------------------------------------------------
+
+    public static java.util.Map<String, Object> snapshot() {
+        java.util.Map<String, Object> m = new java.util.HashMap<>();
+        for (java.lang.reflect.Field f : MovementConfig.class.getFields()) {
+            int mod = f.getModifiers();
+            if (java.lang.reflect.Modifier.isStatic(mod) && !java.lang.reflect.Modifier.isFinal(mod)) {
+                try { m.put(f.getName(), f.get(null)); } catch (IllegalAccessException ignored) {}
+            }
+        }
+        return m;
+    }
+
+    public static void restore(java.util.Map<String, Object> snapshot) {
+        for (java.lang.reflect.Field f : MovementConfig.class.getFields()) {
+            Object v = snapshot.get(f.getName());
+            if (v == null) continue;
+            try { f.set(null, v); } catch (IllegalAccessException ignored) {}
+        }
     }
 
     // Reads the file into the fields above. Safe to call repeatedly. Never throws.
@@ -440,6 +495,7 @@ public final class MovementConfig {
                     debugLogging        = parseB(p, "debugLogging",        debugLogging);
                     allowTeleport       = parseB(p, "allowTeleport",       allowTeleport);
                     clampHandModels     = parseB(p, "clampHandModels",     clampHandModels);
+                    activePreset        = p.getProperty("activePreset", activePreset).trim();
                 }
             } else {
                 // FIRST RUN — no config file yet. Start from the curated Default
@@ -647,7 +703,12 @@ public final class MovementConfig {
             sb.append("# Write a focused Vivecraft-interaction trace to logs/vivemonkecraft-debug.log. true/false.\n");
             sb.append("debugLogging=").append(debugLogging).append("\n\n");
             sb.append("# Keep Vivecraft teleport usable while the mod is on (it desyncs physics). true/false.\n");
-            sb.append("allowTeleport=").append(allowTeleport).append("\n");
+            sb.append("allowTeleport=").append(allowTeleport).append("\n\n");
+
+            sb.append("# The preset the Mod Menu 'reset' buttons revert to (set by picking a preset\n");
+            sb.append("# in the config screen). One of: Default, tutorial, Long Arms, Zero Gravity,\n");
+            sb.append("# Speed Run. Not a gameplay value.\n");
+            sb.append("activePreset=").append(activePreset).append("\n");
 
             Files.writeString(path, sb.toString());
         } catch (Exception e) {
