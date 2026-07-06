@@ -1,35 +1,43 @@
 package laggyboi.vivemonkecraft.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
 // =====================================================================
-// HAND MARKER RENDERER
+// HAND MARKER RENDERER (particle-based)
 // =====================================================================
 //
-// Replaces the old particle hand markers with per-frame geometry drawn
-// directly into the world render pipeline via WorldRenderEvents.
-// Zero particles, zero entities — best performance for Quest standalone,
-// and fully client-side so it works on any server.
+// Shows where each hand grabs: a coloured dot at the grab point plus a sparse
+// line of dots back to the shoulder.
+//   GREEN  = the hand is gripping a block
+//   RED    = the hand is free
+//   YELLOW = wall-sliding (a no-fall-damage slide) — overrides green/red
 //
-// Draws an arm line per hand (shoulder → grab point) plus a wireframe cube at
-// the grab point matching the hand hitbox size.
-// Green when gripping a block, red when free. Lines only.
+// WHY PARTICLES: the original drew crisp lines + a wireframe cube straight into
+// the world render pipeline via Fabric's WorldRenderEvents. That hook was removed
+// in the 1.21.9 render rework (and 26.2 removed MultiBufferSource too), and there
+// is no replacement world-render event. Client-side dust particles are render-API
+// stable across every version, need no pipeline access, and are purely local
+// (never sent to the server), so they work on any server. The trade-off is the
+// marker is a soft glowing dot/trail rather than a crisp line + cube.
 //
-// State fields are written once per game tick by GorillaLocomotionHandler
-// and read every render frame here.
+// State fields are written once per game tick by GorillaLocomotionHandler; emit()
+// is called right after, also once per tick.
 // =====================================================================
 
 public final class HandMarkerRenderer {
 
     private HandMarkerRenderer() {}
 
+    // Dots spawned along each shoulder→grab arm (plus the grab-point dot itself).
+    private static final int ARM_SEGMENTS = 4;
+    // Dust size. ~1.0 reads clearly in VR without swamping the view.
+    private static final float DOT_SCALE = 1.0f;
+
     // =========================================================================
-    // Tick-to-frame state — written by GorillaLocomotionHandler, read per frame
+    // Tick-to-frame state — written by GorillaLocomotionHandler
     // =========================================================================
 
     // Shoulder joint positions (world-space), computed from headPositon + player yaw
@@ -59,111 +67,46 @@ public final class HandMarkerRenderer {
     // =========================================================================
 
     public static void register() {
-        // 1.21.9 removed Fabric's WorldRenderEvents/WorldRenderContext in the render
-        // rework, so there's no per-frame world hook to register against anymore.
-        // The drawing logic below is preserved; re-enable the markers by calling
-        // renderMarkers(...) from a LevelRenderer mixin once a hook that exposes a
-        // PoseStack + MultiBufferSource + camera is wired up for the new pipeline.
+        // Nothing to register: particles are emitted directly from the physics tick
+        // (see emit), so there's no render hook to wire up.
     }
 
     // =========================================================================
-    // Render callback — call per frame with the world-render context's pose stack,
-    // buffer source, and camera position. Currently unwired on 1.21.9 (see register).
+    // Emit — called once per game tick by GorillaLocomotionHandler after it has
+    // updated the state above. Spawns the marker particles for this frame.
     // =========================================================================
 
-    public static void renderMarkers(PoseStack stack, MultiBufferSource buf, Vec3 cam) {
+    public static void emit(Minecraft client) {
         if (!VivemonkecraftClient.isEnabled()) return;
         if (!MovementConfig.showHandMarkers) return;
-        if (shoulderMain == null || grabMain == null || shoulderOff == null || grabOff == null) return;
-        if (buf == null) return;
+        ClientLevel level = client.level;
+        if (level == null) return;
 
-        VertexConsumer lines = buf.getBuffer(RenderTypes.lines());
+        emitHand(level, shoulderMain, grabMain, grippingMain);
+        emitHand(level, shoulderOff,  grabOff,  grippingOff);
+    }
 
-        // Capped radius so the drawn cube always matches the EFFECTIVE grab box.
-        double r = SettingCaps.handRadius();
+    // A grab-point dot + a few evenly spaced dots up the arm toward the shoulder.
+    private static void emitHand(ClientLevel level, Vec3 shoulder, Vec3 grab, boolean gripping) {
+        if (grab == null) return;
+        // 0xRRGGBB: yellow while sliding, else green (gripping) / red (free).
+        int color = sliding ? 0xFFFF00 : (gripping ? 0x00FF00 : 0xFF0000);
+        DustParticleOptions dust = new DustParticleOptions(color, DOT_SCALE);
 
-        stack.pushPose();
-        stack.translate(-cam.x, -cam.y, -cam.z);
+        // Grab point. force=true so it shows even on "minimal" particle settings;
+        // zero velocity so it stays put at the grab spot.
+        level.addParticle(dust, true, false, grab.x, grab.y, grab.z, 0.0, 0.0, 0.0);
 
-        drawArm (lines, stack, shoulderMain, grabMain, grippingMain);
-        drawArm (lines, stack, shoulderOff,  grabOff,  grippingOff);
-        drawCube(lines, stack, grabMain, r, grippingMain);
-        drawCube(lines, stack, grabOff,  r, grippingOff);
-
-        stack.popPose();
-
-        // Flush immediately so the lines are visible this frame.
-        if (buf instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch(RenderTypes.lines());
+        // Sparse arm line: interpolate a few points between shoulder and grab.
+        if (shoulder != null) {
+            for (int i = 1; i < ARM_SEGMENTS; i++) {
+                double t = i / (double) ARM_SEGMENTS;
+                level.addParticle(dust, true, false,
+                        shoulder.x + (grab.x - shoulder.x) * t,
+                        shoulder.y + (grab.y - shoulder.y) * t,
+                        shoulder.z + (grab.z - shoulder.z) * t,
+                        0.0, 0.0, 0.0);
+            }
         }
     }
-
-    // =========================================================================
-    // Arm drawing
-    // =========================================================================
-
-    // Draws a single straight line from shoulder socket to grab point.
-    // Yellow while wall-sliding, otherwise green when gripping / red when free.
-    private static void drawArm(VertexConsumer lines, PoseStack stack,
-                                  Vec3 shoulder, Vec3 grabPoint, boolean gripping) {
-        float r = sliding ? 1.0f : (gripping ? 0.0f : 1.0f);
-        float g = sliding ? 1.0f : (gripping ? 1.0f : 0.0f);
-        putLine(lines, stack.last().pose(),
-                shoulder.x, shoulder.y, shoulder.z,
-                grabPoint.x, grabPoint.y, grabPoint.z,
-                r, g, 0f);
-    }
-
-    // Draws a wireframe cube centred on `center` with half-size `r` (matches the
-    // hand hitbox radius so the cube shows exactly what the grab detection sees).
-    // Same color scheme as the arm line: green = gripping, red = free.
-    private static void drawCube(VertexConsumer lines, PoseStack stack,
-                                   Vec3 centre, double r, boolean gripping) {
-        float cr = sliding ? 1.0f : (gripping ? 0.0f : 1.0f);
-        float cg = sliding ? 1.0f : (gripping ? 1.0f : 0.0f);
-        Matrix4f m = stack.last().pose();
-
-        double x0 = centre.x - r, x1 = centre.x + r;
-        double y0 = centre.y - r, y1 = centre.y + r;
-        double z0 = centre.z - r, z1 = centre.z + r;
-
-        // Bottom face
-        putLine(lines, m, x0,y0,z0, x1,y0,z0, cr,cg,0f);
-        putLine(lines, m, x1,y0,z0, x1,y0,z1, cr,cg,0f);
-        putLine(lines, m, x1,y0,z1, x0,y0,z1, cr,cg,0f);
-        putLine(lines, m, x0,y0,z1, x0,y0,z0, cr,cg,0f);
-        // Top face
-        putLine(lines, m, x0,y1,z0, x1,y1,z0, cr,cg,0f);
-        putLine(lines, m, x1,y1,z0, x1,y1,z1, cr,cg,0f);
-        putLine(lines, m, x1,y1,z1, x0,y1,z1, cr,cg,0f);
-        putLine(lines, m, x0,y1,z1, x0,y1,z0, cr,cg,0f);
-        // Vertical edges
-        putLine(lines, m, x0,y0,z0, x0,y1,z0, cr,cg,0f);
-        putLine(lines, m, x1,y0,z0, x1,y1,z0, cr,cg,0f);
-        putLine(lines, m, x1,y0,z1, x1,y1,z1, cr,cg,0f);
-        putLine(lines, m, x0,y0,z1, x0,y1,z1, cr,cg,0f);
-    }
-
-    // =========================================================================
-    // Geometry helpers
-    // =========================================================================
-
-    // Emits one line segment (A→B). Normal is auto-computed from the direction.
-    // In 1.21.4, setNormal takes plain floats (the Matrix 3f overload was removed).
-    private static void putLine(VertexConsumer v, Matrix4f m,
-                                  double ax, double ay, double az,
-                                  double bx, double by, double bz,
-                                  float r, float g, float b) {
-        double dx = bx - ax, dy = by - ay, dz = bz - az;
-        double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        float nx = len > 0 ? (float) (dx / len) : 1f;
-        float ny = len > 0 ? (float) (dy / len) : 0f;
-        float nz = len > 0 ? (float) (dz / len) : 0f;
-
-        v.addVertex(m, (float) ax, (float) ay, (float) az)
-         .setColor(r, g, b, 1f).setNormal(nx, ny, nz);
-        v.addVertex(m, (float) bx, (float) by, (float) bz)
-         .setColor(r, g, b, 1f).setNormal(nx, ny, nz);
-    }
-
 }
