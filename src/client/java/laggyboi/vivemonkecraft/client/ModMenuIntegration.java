@@ -3,6 +3,7 @@ package laggyboi.vivemonkecraft.client;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import java.util.List;
+import java.util.Map;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -22,13 +23,29 @@ import net.minecraft.network.chat.Component;
 // (they're listed under "suggests" in fabric.mod.json). The .properties file
 // still works exactly the same either way.
 //
-// HOW IT WORKS:
-//   * Each row reads the current MovementConfig value and, when you hit Save,
-//     writes your new value back into MovementConfig AND saves the file.
-//   * Because the handler reads MovementConfig live, changes apply immediately.
+// RESET BUTTONS FOLLOW THE ACTIVE PRESET:
+//   Every row's little reset arrow reverts to the value of the CURRENTLY ACTIVE
+//   preset (MovementConfig.activePreset), not a fixed factory default. Pick
+//   "Speed Run" + Save and the reset arrows now revert to Speed Run's values;
+//   pick "Default" and they revert to the Default preset. The active preset is
+//   shown at the top of the Presets page so it's never a mystery.
 // =====================================================================
 
 public class ModMenuIntegration implements ModMenuApi {
+
+    // The active preset's value for every field, captured at screen-build time.
+    // Each entry's setDefaultValue (= what its reset arrow reverts to) reads from here.
+    private Map<String, Object> presetVals;
+
+    // Reset-target getters — pull the active preset's value for a field by name.
+    private double pD(String key) {
+        Object v = presetVals.get(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
+    }
+    private boolean pB(String key) {
+        Object v = presetVals.get(key);
+        return v instanceof Boolean && (Boolean) v;
+    }
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
@@ -48,6 +65,37 @@ public class ModMenuIntegration implements ModMenuApi {
         // Sync fields from the file first, so the sliders show the latest values.
         MovementConfig.load();
 
+        // RESET-BUTTON TARGETS: compute the active preset's value for every field
+        // WITHOUT disturbing the player's real values. Snapshot current -> apply the
+        // active preset -> snapshot those values (presetVals) -> restore current. The
+        // entries below read their setDefaultValue from presetVals, so each reset arrow
+        // reverts to the active preset. try/finally guarantees we always restore.
+        Map<String, Object> current = MovementConfig.snapshot();
+        try {
+            applyPreset(MovementConfig.activePreset);
+            presetVals = MovementConfig.snapshot();
+        } finally {
+            MovementConfig.restore(current);
+        }
+
+        // Has the player tweaked away from the active preset? (drives the "(customized)"
+        // tag so they know reset won't reproduce their current values exactly).
+        boolean customized = false;
+        for (Map.Entry<String, Object> e : presetVals.entrySet()) {
+            Object a = current.get(e.getKey());
+            Object b = e.getValue();
+            if (a instanceof Number && b instanceof Number) {
+                if (Math.abs(((Number) a).doubleValue() - ((Number) b).doubleValue()) > 1e-9) {
+                    customized = true;
+                    break;
+                }
+            } else if (!java.util.Objects.equals(a, b)) {
+                customized = true;
+                break;
+            }
+        }
+        final String activeLabel = MovementConfig.activePreset + (customized ? " §7(customized)" : "");
+
         // PRESET FIX: Cloth Config calls every entry's save consumer IN REGISTRATION
         // ORDER before it calls setSavingRunnable. Because the preset dropdown is
         // registered first, its save consumer would run first — but then EVERY
@@ -64,9 +112,14 @@ public class ModMenuIntegration implements ModMenuApi {
             .setTitle(Component.literal("ViveMonkeCraft — Gorilla Locomotion"));
 
         // Runs last when you press "Save" (after all entry save consumers).
-        // Apply the preset HERE so it overwrites whatever the sliders wrote.
+        // Apply the chosen preset HERE so it overwrites whatever the sliders wrote,
+        // and record it as the new active preset (so the reset arrows follow it next
+        // time the screen opens).
         builder.setSavingRunnable(() -> {
-            if (!pendingPreset[0].equals("— None —")) applyPreset(pendingPreset[0]);
+            if (!pendingPreset[0].equals("— None —")) {
+                applyPreset(pendingPreset[0]);
+                MovementConfig.activePreset = pendingPreset[0];
+            }
             MovementConfig.save();
         });
 
@@ -78,6 +131,14 @@ public class ModMenuIntegration implements ModMenuApi {
         // slider values (Cloth Config reads field values at screen-open time).
         // ====================================================================
         ConfigCategory presets = builder.getOrCreateCategory(Component.literal("Presets"));
+
+        // PRESET SHOWER — tells the player which preset is active and what "reset" does.
+        presets.addEntry(eb.startTextDescription(
+            Component.literal("§7Active preset: §a" + activeLabel
+                + "\n§7The §freset arrows§7 next to each setting revert it to §athis preset§7. "
+                + "Pick a different preset below and press §fSave§7 to switch — the reset "
+                + "arrows will then follow the new one."))
+            .build());
 
         presets.addEntry(eb.startTextDescription(
             Component.literal("§7Pick a preset and press §fSave§7. Close and re-open this screen to see the updated values you can scroll this menu while presets are open look right there is a height slider."))
@@ -116,29 +177,29 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory movement = builder.getOrCreateCategory(Component.literal("Movement"));
 
         movement.addEntry(eb.startBooleanToggle(Component.literal("Step assist teleports"), MovementConfig.stepTeleport)
-            .setDefaultValue(true)
+            .setDefaultValue(pB("stepTeleport"))
             .setTooltip(
                 Component.literal("ON = step assist places you directly on top of the ledge (instant)."),
                 Component.literal("OFF = old behaviour: an upward velocity boost arcs you over it."))
             .setSaveConsumer(v -> MovementConfig.stepTeleport = v).build());
 
         movement.addEntry(eb.startBooleanToggle(Component.literal("Step assist"), MovementConfig.stepAssist)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("stepAssist"))
                 .setTooltip(Component.literal("Raise step height so legs stop snagging on block edges."))
                 .setSaveConsumer(v -> MovementConfig.stepAssist = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Push speed"), MovementConfig.pullStrength)
-            .setDefaultValue(2.5).setMin(0.0).setMax(8.0)
+            .setDefaultValue(pD("pullStrength")).setMin(0.0).setMax(8.0)
             .setTooltip(Component.literal("How strongly your swing moves you. 1.0 = 1:1, higher = faster. (Ignored in anchor mode — that is always 1:1.)"))
             .setSaveConsumer(v -> MovementConfig.pullStrength = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Ground friction (anti-slide)"), MovementConfig.groundFriction)
-            .setDefaultValue(0.4).setMin(0.0).setMax(1.0)
+            .setDefaultValue(pD("groundFriction")).setMin(0.0).setMax(1.0)
             .setTooltip(Component.literal("1.0 = slide forever, 0.5 = stops fast, 0.2 = near-instant."))
             .setSaveConsumer(v -> MovementConfig.groundFriction = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Air friction"), MovementConfig.airFriction)
-            .setDefaultValue(0.1).setMin(0.0).setMax(1.0)
+            .setDefaultValue(pD("airFriction")).setMin(0.0).setMax(1.0)
             .setTooltip(
                 Component.literal("How much horizontal speed bleeds off while airborne and NOT gripping."),
                 Component.literal("1.0 = normal Minecraft drag  (velocity × 0.91 each tick)"),
@@ -148,17 +209,17 @@ public class ModMenuIntegration implements ModMenuApi {
             .setSaveConsumer(v -> MovementConfig.airFriction = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Wall stickiness"), MovementConfig.wallStickiness)
-            .setDefaultValue(0.9).setMin(0.0).setMax(1.0)
+            .setDefaultValue(pD("wallStickiness")).setMin(0.0).setMax(1.0)
             .setTooltip(Component.literal("How hard hands cling to walls while gripping. 1.0 = hang forever, 0.5 = slowly slide down, 0.0 = no clinging (gravity pulls you off)."))
             .setSaveConsumer(v -> MovementConfig.wallStickiness = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Floor stickiness"), MovementConfig.floorStickiness)
-            .setDefaultValue(1.0).setMin(0.0).setMax(1.0)
+            .setDefaultValue(pD("floorStickiness")).setMin(0.0).setMax(1.0)
             .setTooltip(Component.literal("How much you slide across the floor while a hand is planted. 1.0 = stop dead (sticks to spot), 0.5 = some glide, 0.0 = ice-like (slides forever)."))
             .setSaveConsumer(v -> MovementConfig.floorStickiness = v).build());
 
         movement.addEntry(eb.startDoubleField(Component.literal("Jitter filter (minImpulse)"), MovementConfig.minImpulse)
-            .setDefaultValue(0.002).setMin(0.0).setMax(0.1)
+            .setDefaultValue(pD("minImpulse")).setMin(0.0).setMax(0.1)
             .setTooltip(Component.literal("Movements smaller than this are ignored so a resting hand stays still."))
             .setSaveConsumer(v -> MovementConfig.minImpulse = v).build());
 
@@ -168,27 +229,27 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory body = builder.getOrCreateCategory(Component.literal("Reach & Body"));
 
         body.addEntry(eb.startDoubleField(Component.literal("Gorilla arm length"), MovementConfig.handReachMultiplier)
-            .setDefaultValue(1.0).setMin(1.0).setMax(6.0)
+            .setDefaultValue(pD("handReachMultiplier")).setMin(1.0).setMax(6.0)
             .setTooltip(Component.literal("Longer arms = reach the ground with less real-arm reach. 2.5 default, raise to 3.0+"))
             .setSaveConsumer(v -> MovementConfig.handReachMultiplier = v).build());
 
         body.addEntry(eb.startDoubleField(Component.literal("Max arm length (blocks)"), MovementConfig.maxArmLength)
-            .setDefaultValue(3.0).setMin(1.5).setMax(8.0)
+            .setDefaultValue(pD("maxArmLength")).setMin(1.5).setMax(8.0)
             .setTooltip(Component.literal("Hard limit on how far a hand can be from your head."))
             .setSaveConsumer(v -> MovementConfig.maxArmLength = v).build());
 
         body.addEntry(eb.startDoubleField(Component.literal("Hand grab size"), MovementConfig.handRadius)
-            .setDefaultValue(0.12).setMin(0.02).setMax(0.5)
+            .setDefaultValue(pD("handRadius")).setMin(0.02).setMax(0.5)
             .setTooltip(Component.literal("Radius of the hand touch sphere. Bigger = easier to grab."))
             .setSaveConsumer(v -> MovementConfig.handRadius = v).build());
 
         body.addEntry(eb.startDoubleField(Component.literal("Hitbox height (legs)"), MovementConfig.hitboxHeightScale)
-            .setDefaultValue(0.25).setMin(0.2).setMax(1.0)
+            .setDefaultValue(pD("hitboxHeightScale")).setMin(0.2).setMax(1.0)
             .setTooltip(Component.literal("Shrinks your collision box height to climb onto blocks. 1.0 = normal, 0.25 = compact (default)."))
             .setSaveConsumer(v -> MovementConfig.hitboxHeightScale = v).build());
 
         body.addEntry(eb.startDoubleField(Component.literal("Step height"), MovementConfig.stepHeight)
-            .setDefaultValue(1.0).setMin(0.5).setMax(2.0)
+            .setDefaultValue(pD("stepHeight")).setMin(0.5).setMax(2.0)
             .setTooltip(Component.literal("Ledge height you can step over. 0.6 = vanilla, 1.5 = 1.5 blocks (default)."))
             .setSaveConsumer(v -> MovementConfig.stepHeight = v).build());
 
@@ -198,27 +259,27 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory jump = builder.getOrCreateCategory(Component.literal("Jump & Gravity"));
 
         jump.addEntry(eb.startDoubleField(Component.literal("Jump threshold"), MovementConfig.velocityLimit)
-            .setDefaultValue(0.05).setMin(0.0).setMax(1.0)
+            .setDefaultValue(pD("velocityLimit")).setMin(0.0).setMax(1.0)
             .setTooltip(Component.literal("You only launch on release if you were moving faster than this."))
             .setSaveConsumer(v -> MovementConfig.velocityLimit = v).build());
 
         jump.addEntry(eb.startDoubleField(Component.literal("Jump power"), MovementConfig.jumpMultiplier)
-            .setDefaultValue(1.8).setMin(0.0).setMax(5.0)
+            .setDefaultValue(pD("jumpMultiplier")).setMin(0.0).setMax(5.0)
             .setTooltip(Component.literal("How much your speed is multiplied into the launch. 1.0 = release speed, 1.4 = boost."))
             .setSaveConsumer(v -> MovementConfig.jumpMultiplier = v).build());
 
         jump.addEntry(eb.startDoubleField(Component.literal("Max launch speed"), MovementConfig.maxJumpSpeed)
-            .setDefaultValue(1.0).setMin(0.1).setMax(5.0)
+            .setDefaultValue(pD("maxJumpSpeed")).setMin(0.1).setMax(5.0)
             .setTooltip(Component.literal("Hard cap on launch speed (blocks/tick). 1.0 = 20 blocks/sec."))
             .setSaveConsumer(v -> MovementConfig.maxJumpSpeed = v).build());
 
         jump.addEntry(eb.startDoubleField(Component.literal("Jump smoothing (ticks)"), MovementConfig.velocityHistorySize)
-            .setDefaultValue(6.0).setMin(1.0).setMax(20.0)
+            .setDefaultValue(pD("velocityHistorySize")).setMin(1.0).setMax(20.0)
             .setTooltip(Component.literal("How many ticks of movement are averaged for the launch."))
             .setSaveConsumer(v -> MovementConfig.velocityHistorySize = v).build());
 
         jump.addEntry(eb.startDoubleField(Component.literal("Gravity"), MovementConfig.gravityMultiplier)
-            .setDefaultValue(1.0).setMin(0.0).setMax(1.0)
+            .setDefaultValue(pD("gravityMultiplier")).setMin(0.0).setMax(1.0)
             .setTooltip(
                 Component.literal("Scales gravity while airborne and NOT gripping."),
                 Component.literal("1.0 = normal Minecraft gravity  (default)"),
@@ -234,7 +295,7 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory visual = builder.getOrCreateCategory(Component.literal("Visual"));
 
         visual.addEntry(eb.startBooleanToggle(Component.literal("Clamp hand models to surfaces"), MovementConfig.clampHandModels)
-            .setDefaultValue(true)
+            .setDefaultValue(pB("clampHandModels"))
             .setTooltip(
                 Component.literal("While gripping, the Vivecraft hand model is drawn ON the block face"),
                 Component.literal("instead of sinking inside it (like Gorilla Tag's hand followers)."),
@@ -242,7 +303,7 @@ public class ModMenuIntegration implements ModMenuApi {
             .setSaveConsumer(v -> MovementConfig.clampHandModels = v).build());
 
         visual.addEntry(eb.startBooleanToggle(Component.literal("Real Monke (gorilla size)"), MovementConfig.realMonke)
-            .setDefaultValue(true)
+            .setDefaultValue(pB("realMonke"))
             .setTooltip(
                 Component.literal("Caps your collision box HEIGHT at 0.5 blocks on both client and"),
                 Component.literal("server so you fit through 1-block tunnels. Height only — width,"),
@@ -250,7 +311,7 @@ public class ModMenuIntegration implements ModMenuApi {
             .setSaveConsumer(v -> MovementConfig.realMonke = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Camera height offset"), MovementConfig.cameraHeightOffset)
-            .setDefaultValue(0.0).setMin(0.0).setMax(1.5)
+            .setDefaultValue(pD("cameraHeightOffset")).setMin(0.0).setMax(1.5)
             .setTooltip(
                 Component.literal("Blocks to LOWER the VR view + hands. 0 = off."),
                 Component.literal("Trade-off: makes your OWN body model look squashed toward the"),
@@ -258,7 +319,7 @@ public class ModMenuIntegration implements ModMenuApi {
             .setSaveConsumer(v -> MovementConfig.cameraHeightOffset = v).build());
 
         visual.addEntry(eb.startBooleanToggle(Component.literal("Monke model (no legs)"), MovementConfig.monkeModel)
-            .setDefaultValue(true)
+            .setDefaultValue(pB("monkeModel"))
             .setTooltip(
                 Component.literal("The Gorilla Tag body: legs removed, torso shortened."),
                 Component.literal("Synced via monke-server — every player with the mod sees every"),
@@ -266,37 +327,37 @@ public class ModMenuIntegration implements ModMenuApi {
             .setSaveConsumer(v -> MovementConfig.monkeModel = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke torso offset Y"), MovementConfig.modelTorsoOffsetY)
-            .setDefaultValue(0.0).setMin(-12.0).setMax(12.0)
+            .setDefaultValue(pD("modelTorsoOffsetY")).setMin(-12.0).setMax(12.0)
             .setTooltip(Component.literal("Torso up/down in model pixels (1 px = 1/16 block, +down)."))
             .setSaveConsumer(v -> MovementConfig.modelTorsoOffsetY = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke torso pitch (deg)"), MovementConfig.modelTorsoPitch)
-            .setDefaultValue(-120.0).setMin(-360.0).setMax(360.0)
+            .setDefaultValue(pD("modelTorsoPitch")).setMin(-360.0).setMax(360.0)
             .setTooltip(Component.literal("Torso rotation in degrees — full -360..360 allowed. -120 = GT lean (default)."))
             .setSaveConsumer(v -> MovementConfig.modelTorsoPitch = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke torso height scale"), MovementConfig.modelTorsoScaleY)
-            .setDefaultValue(0.75).setMin(0.1).setMax(2.0)
+            .setDefaultValue(pD("modelTorsoScaleY")).setMin(0.1).setMax(2.0)
             .setTooltip(Component.literal("Torso height multiplier. 0.75 = a bit shorter than the arms."))
             .setSaveConsumer(v -> MovementConfig.modelTorsoScaleY = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke arms offset Y"), MovementConfig.modelArmsOffsetY)
-            .setDefaultValue(0.0).setMin(-12.0).setMax(12.0)
+            .setDefaultValue(pD("modelArmsOffsetY")).setMin(-12.0).setMax(12.0)
             .setTooltip(Component.literal("Arms up/down in model pixels (+down)."))
             .setSaveConsumer(v -> MovementConfig.modelArmsOffsetY = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke arms pitch (deg)"), MovementConfig.modelArmsPitch)
-            .setDefaultValue(0.0).setMin(-360.0).setMax(360.0)
+            .setDefaultValue(pD("modelArmsPitch")).setMin(-360.0).setMax(360.0)
             .setTooltip(Component.literal("Extra arm rotation in degrees (added on top of the swing animation)."))
             .setSaveConsumer(v -> MovementConfig.modelArmsPitch = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke head offset Y"), MovementConfig.modelHeadOffsetY)
-            .setDefaultValue(0.0).setMin(-12.0).setMax(12.0)
+            .setDefaultValue(pD("modelHeadOffsetY")).setMin(-12.0).setMax(12.0)
             .setTooltip(Component.literal("Head up/down in model pixels (+down)."))
             .setSaveConsumer(v -> MovementConfig.modelHeadOffsetY = v).build());
 
         visual.addEntry(eb.startDoubleField(Component.literal("Monke head pitch (deg)"), MovementConfig.modelHeadPitch)
-            .setDefaultValue(0.0).setMin(-360.0).setMax(360.0)
+            .setDefaultValue(pD("modelHeadPitch")).setMin(-360.0).setMax(360.0)
             .setTooltip(Component.literal("Extra head rotation in degrees (added on top of look direction)."))
             .setSaveConsumer(v -> MovementConfig.modelHeadPitch = v).build());
 
@@ -304,7 +365,7 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory BlockInteractions = builder.getOrCreateCategory(Component.literal("BlockInteractions"));
 
         BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Punch mining (experimental)"), MovementConfig.punchMining)
-                .setDefaultValue(true)
+                .setDefaultValue(pB("punchMining"))
                 .setTooltip(
                         Component.literal("Break the block your hand touches — but only while holding the"),
                         Component.literal("tool MEANT for it (pickaxe on stone, etc.) AND only when you PUNCH it"),
@@ -314,14 +375,14 @@ public class ModMenuIntegration implements ModMenuApi {
 
         BlockInteractions.addEntry(eb.startDoubleField(Component.literal("Block_Breaking Threshold"),
                         MovementConfig.punchMiningThreshold)
-                .setDefaultValue(0.04).setMin(0.0).setMax(1)
+                .setDefaultValue(pD("punchMiningThreshold")).setMin(0.0).setMax(1)
                 .setTooltip(
                         Component.literal("how easily you break blocks"),
                         Component.literal("0 make block damage just by touching"))
                 .setSaveConsumer(V -> MovementConfig.punchMiningThreshold = V).build());
 
         BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Punch mining: no tool needed"), MovementConfig.punchMiningNoTool)
-                .setDefaultValue(true)
+                .setDefaultValue(pB("punchMiningNoTool"))
                 .setTooltip(
                         Component.literal("Let punch mining break blocks with ANY item (even bare hands) —"),
                         Component.literal("hand speed alone decides. Tool-required blocks still won't drop"),
@@ -329,7 +390,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.punchMiningNoTool = v).build());
 
         BlockInteractions.addEntry(eb.startBooleanToggle(Component.literal("Magma block sides hurt"), MovementConfig.magmaTouchDamage)
-                .setDefaultValue(true)
+                .setDefaultValue(pB("magmaTouchDamage"))
                 .setTooltip(
                         Component.literal("Grabbing a magma block on ANY face (not just standing on top)"),
                         Component.literal("deals the same hot-floor damage. Fire resistance negates it."))
@@ -342,7 +403,7 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory gtPage = builder.getOrCreateCategory(Component.literal("GT Physics"));
 
         gtPage.addEntry(eb.startBooleanToggle(Component.literal("GT physics beta (anchor mode)"), MovementConfig.gtPhysics)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("gtPhysics"))
                 .setTooltip(
                         Component.literal("ON = official GorillaLocomotion algorithm: hands ANCHOR to the spot"),
                         Component.literal("they touch and your body is dragged 1:1 (Push speed + stickiness ignored)."),
@@ -351,14 +412,14 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.gtPhysics = v).build());
 
         gtPage.addEntry(eb.startDoubleField(Component.literal("Push strength"), MovementConfig.gtPushStrength)
-                .setDefaultValue(1.0).setMin(0.1).setMax(100.0)
+                .setDefaultValue(pD("gtPushStrength")).setMin(0.1).setMax(100.0)
                 .setTooltip(
                         Component.literal("Body movement = hand movement × this."),
                         Component.literal("1.0 = authentic Gorilla Tag 1:1, 2.0 = twice as far, 0.5 = half."))
                 .setSaveConsumer(v -> MovementConfig.gtPushStrength = v).build());
 
         gtPage.addEntry(eb.startDoubleField(Component.literal("Drag gain"), MovementConfig.gtDragGain)
-                .setDefaultValue(0.30).setMin(0.05).setMax(100.0)
+                .setDefaultValue(pD("gtDragGain")).setMin(0.05).setMax(100.0)
                 .setTooltip(
                         Component.literal("Fraction of the distance to the anchor corrected each tick."),
                         Component.literal("0.30 = smooth (default), 0.6 = snappier, 0.2 = softer."),
@@ -366,14 +427,14 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.gtDragGain = v).build());
 
         gtPage.addEntry(eb.startDoubleField(Component.literal("Unstick distance (blocks)"), MovementConfig.gtUnstickDistance)
-                .setDefaultValue(1.0).setMin(0.2).setMax(3.0)
+                .setDefaultValue(pD("gtUnstickDistance")).setMin(0.2).setMax(3.0)
                 .setTooltip(
                         Component.literal("How far a hand may stray from its anchor before the grip releases."),
                         Component.literal("Official Gorilla Tag uses 1.0."))
                 .setSaveConsumer(v -> MovementConfig.gtUnstickDistance = v).build());
 
         gtPage.addEntry(eb.startDoubleField(Component.literal("Ice slip"), MovementConfig.gtIceSlip)
-                .setDefaultValue(0.95).setMin(0.0).setMax(1.0)
+                .setDefaultValue(pD("gtIceSlip")).setMin(0.0).setMax(1.0)
                 .setTooltip(
                         Component.literal("How fast an anchor drifts toward the hand on ice."),
                         Component.literal("0 = ice grips like stone, 0.95 = push off only (default)."))
@@ -383,7 +444,7 @@ public class ModMenuIntegration implements ModMenuApi {
         ConfigCategory Experimental = builder.getOrCreateCategory(Component.literal("Experimental"));
 
         Experimental.addEntry(eb.startBooleanToggle(Component.literal("Allow Vivecraft teleport"), MovementConfig.allowTeleport)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("allowTeleport"))
                 .setTooltip(
                         Component.literal("OFF (default): teleport is disabled while gorilla locomotion is on,"),
                         Component.literal("because teleporting desyncs the room origin and breaks hand physics."),
@@ -392,7 +453,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.allowTeleport = v).build());
 
         Experimental.addEntry(eb.startBooleanToggle(Component.literal("Ice floor = ice wall (experimental)"), MovementConfig.iceFloorWallLogic)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("iceFloorWallLogic"))
                 .setTooltip(
                         Component.literal("Treat grabbing an ICE FLOOR exactly like an ice WALL: gravity on,"),
                         Component.literal("no anchor glue, pure push-off momentum. Legacy physics only."),
@@ -401,7 +462,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.iceFloorWallLogic = v).build());
 
         Experimental.addEntry(eb.startBooleanToggle(Component.literal("Vanilla ice friction"), MovementConfig.vanillaIceFriction)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("vanillaIceFriction"))
                 .setTooltip(
                         Component.literal("Ice acts on your hands/feet like vanilla legs do: you SKATE with"),
                         Component.literal("the block's real friction (×0.91 inertia) and no speed cap, instead"),
@@ -414,7 +475,7 @@ public class ModMenuIntegration implements ModMenuApi {
         //Debug Options
         ConfigCategory Debugs = builder.getOrCreateCategory(Component.literal("Debug Options"));
         Debugs.addEntry(eb.startBooleanToggle(Component.literal("Debug logging"), MovementConfig.debugLogging)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("debugLogging"))
                 .setTooltip(
                         Component.literal("Write a focused ViveMonkeCraft-interaction trace"),
                         Component.literal("to logs/vivemonkecraft-debug.log."),
@@ -423,7 +484,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setSaveConsumer(v -> MovementConfig.debugLogging = v).build());
 
         Debugs.addEntry(eb.startBooleanToggle(Component.literal("Show hand markers"), MovementConfig.showHandMarkers)
-                .setDefaultValue(false)
+                .setDefaultValue(pB("showHandMarkers"))
                 .setTooltip(Component.literal("Render split arm lines at your hands. Green = touching a block, red = not."))
                 .setSaveConsumer(v -> MovementConfig.showHandMarkers = v).build());
 
@@ -434,11 +495,20 @@ public class ModMenuIntegration implements ModMenuApi {
     // PRESETS
     // =========================================================================
 
-    // Each preset sets the subset of settings that define its feel.
-    // The overall builder.setSavingRunnable(MovementConfig::save) persists
-    // everything to disk when the player presses Save.
+    // Every preset starts from the COMPLETE Default baseline and then applies its own
+    // overrides, so each preset is a self-contained configuration (and the reset
+    // buttons above can resolve a value for every field). Picking a preset therefore
+    // resets settings it doesn't mention back to Default — intended, so "reset to this
+    // preset" and the active-preset indicator are always truthful.
     private void applyPreset(String preset) {
+        // Full Default baseline first — every preset builds on this.
+        MovementConfig.applyDefaultPreset();
+
         switch (preset) {
+            case "Default":
+                // Just the baseline.
+                break;
+
             case "tutorial":
                 //it gives every helping settings turned on
                 MovementConfig.pullStrength        = 2.5;
@@ -465,12 +535,6 @@ public class ModMenuIntegration implements ModMenuApi {
                 MovementConfig.realMonke           = true;
                 MovementConfig.modelTorsoPitch     = -120.0;
                 MovementConfig.gtPhysics           = false;
-                break;
-
-            case "Default":
-                // Delegate to the single source of truth (also used on first run /
-                // version reset, and dependency-free so it works without Cloth).
-                MovementConfig.applyDefaultPreset();
                 break;
 
             case "Long Arms":
@@ -541,7 +605,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 break;
 
             default:
-                // "— None —" or anything unrecognised: do nothing.
+                // Unknown / "— None —": leave the Default baseline as-is.
                 break;
         }
     }
