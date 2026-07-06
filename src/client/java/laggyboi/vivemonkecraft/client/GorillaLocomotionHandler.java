@@ -229,17 +229,10 @@ public class GorillaLocomotionHandler {
             return;
         }
 
-        // LADDER / VINE GUARD: while the player is on a climbable (ladder, vine,
-        // scaffolding, ...), the mod's hand grabs latch onto the ladder block and fight
-        // vanilla's climb controls, making climbing feel clunky. Go fully inert so
-        // vanilla climbing takes over — the hands stop grabbing and hand physics resumes
-        // the instant you step off the ladder. onClimbable() is vanilla LivingEntity API,
-        // true whenever the player occupies a climbable block.
-        if (player.onClimbable()) {
-            onGuiPause(client);
-            prevTickVel = player.getDeltaMovement();
-            return;
-        }
+        // LADDERS / VINES: not handled by going inert here. Instead climbable blocks are
+        // made pass-through for the HANDS in isUngrabbable() below, so the mod never grabs
+        // the ladder (cannot fight the climb) while floor-pushing and Vivecraft ladder
+        // climbing keep working.
 
         // TELEPORT-AIM GUARD: while the teleport button is held, Vivecraft freezes the
         // hand/room pose. If we kept processing we'd anchor to the stale hand and slide
@@ -1000,7 +993,10 @@ public class GorillaLocomotionHandler {
                                         BlockHitResult hitMain, boolean mainTouching, Vec3 mainVel,
                                         BlockHitResult hitOff,  boolean offTouching,  Vec3 offVel) {
         MultiPlayerGameMode gm = client.gameMode;
-        if (gm == null || client.level == null || !MovementConfig.punchMining) {
+        // CREATIVE: punch mining is OFF - in creative every block instant-breaks, so a
+        // hand brushing a block while you climb or push would destroy the world under you.
+        if (gm == null || client.level == null || !MovementConfig.punchMining
+                || player.getAbilities().instabuild) {
             stopMining(client);
             return;
         }
@@ -1528,7 +1524,7 @@ public class GorillaLocomotionHandler {
     // NOTE: ice is NOT listed here — ice DOES allow a brief first-contact grip so
     //       the push-off impulse path (above) can fire. Ice just can't be sustained.
     private static boolean isUngrabbable(BlockState bs) {
-        return bs.is(Blocks.BARRIER);
+        return bs.is(Blocks.BARRIER) || bs.is(net.minecraft.tags.BlockTags.CLIMBABLE) || bs.is(net.minecraft.tags.BlockTags.CLIMBABLE) || bs.is(net.minecraft.tags.BlockTags.CLIMBABLE) || bs.is(net.minecraft.tags.BlockTags.CLIMBABLE) || bs.is(net.minecraft.tags.BlockTags.CLIMBABLE);
     }
 
     // -----------------------------------------------------------------------
