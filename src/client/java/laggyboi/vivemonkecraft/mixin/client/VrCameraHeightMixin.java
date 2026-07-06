@@ -118,6 +118,12 @@ public class VrCameraHeightMixin {
                 Class<?> vrDataCls = vrData.getClass();
                 vmc$c0Field = vrDataCls.getField("c0");
                 vmc$c1Field = vrDataCls.getField("c1");
+                // Vivecraft 1.3.x made c0/c1 FINAL. Reflection can only write a final
+                // field after setAccessible(true) — without this the pose swap throws
+                // IllegalAccessException and the clamp silently disables itself (which
+                // is exactly why the hand clamp stopped working on 1.3.x / 26.x).
+                vmc$c0Field.setAccessible(true);
+                vmc$c1Field.setAccessible(true);
                 Class<?> poseCls = vmc$c0Field.getType();
                 vmc$poseDataField   = poseCls.getDeclaredField("data");
                 vmc$poseMatrixField = poseCls.getDeclaredField("matrix");
