@@ -1,6 +1,6 @@
 # ViveMonkeCraft
 
-**Gorilla Tag style VR locomotion for Minecraft 1.21.4.** Grab the world with your
+**Gorilla Tag style VR locomotion for Minecraft 1.21.4-26.2.** Grab the world with your
 hands and swing, climb, and fling yourself through it. No joystick required.
 
 Built for **QuestCraft / Vivecraft 1.2.x**. Client-side for singleplayer & LAN; an
