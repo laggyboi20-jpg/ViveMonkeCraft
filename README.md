@@ -1,10 +1,16 @@
-# ViveMonkeCraft
+# ViveMonkeCraft (Fabric)
 
 **Gorilla Tag style VR locomotion for Minecraft 1.21.4.** Grab the world with your
 hands and swing, climb, and fling yourself through it. No joystick required.
 
-Built for **QuestCraft / Vivecraft 1.2.x**. Client-side for singleplayer & LAN; an
-optional server companion unlocks it (and lets admins cap it) on dedicated servers.
+> This is the **Fabric** build for **Minecraft 1.21.4**.
+> Other loaders and Minecraft versions live on their own branches and repos:
+> [Fabric](https://github.com/laggyboi20-jpg/ViveMonkeCraft-ClientFabric) ·
+> [NeoForge](https://github.com/laggyboi20-jpg/ViveMonkeCraft-ClientNeoForge) ·
+> [Forge](https://github.com/laggyboi20-jpg/ViveMonkeCraft-ClientForge)
+
+Client-side for singleplayer & LAN; an optional server companion unlocks it (and lets
+admins cap it) on dedicated servers.
 
 ---
 
@@ -15,11 +21,29 @@ optional server companion unlocks it (and lets admins cap it) on dedicated serve
 | Minecraft | 1.21.4 |
 | Loader | Fabric Loader 0.19.3+ |
 | API | Fabric API |
-| VR | QuestCraft / Vivecraft 1.2.x |
-| Optional | Mod Menu + Cloth Config (in-game settings screen) |
-| Optional | **ViveMonke server mod** (`monke-server`) only for **dedicated** servers |
+| VR | Vivecraft (PCVR) for this Minecraft version — Fabric is also the loader QuestCraft (Quest standalone) runs on |
+| Optional | Mod Menu + Cloth Config — enables the in-game settings screen |
+| Optional | **ViveMonke server mod** — only for **dedicated** servers |
 
-The mod is `environment: client`. It does nothing without Vivecraft/QuestCraft active except show you're friends without legs.
+The mod is client-only (`environment: client`). It does nothing without Vivecraft active
+except render other players without legs. Vivecraft itself is **not** bundled — it is
+reached at runtime by reflection, so the mod loads fine with or without it.
+
+---
+
+## Configuring
+
+Configure it three ways: the **Mod Menu → ViveMonkeCraft** button opens the Cloth Config screen (needs Mod Menu **and** Cloth Config installed); the **`/vmc`** client command (`/vmc`, `/vmc reload`, `/vmc set <setting> <value>`); or by editing **`config/vivemonkecraft.properties`** directly.
+
+---
+
+## Server Control
+
+The companion server mod lets admins fully **disable** the mod, set **hard speed caps**
+(enforced server-side), choose which **op level** bypasses limits, and **raise the allowed
+limits** for everyone (push strength, reach, gravity, etc.). Players without cheats /
+operator access are otherwise clamped to safe defaults, so editing the client config can't
+gain an unfair edge.
 
 ---
 
@@ -112,7 +136,7 @@ texts are in the [`third party license/`](third%20party%20license) folder.
 | Claude Code | |
 
 **Vivecraft** is **LGPLv3** and is accessed at runtime via reflection only. It is
-**not bundled or modified** by this mod; players supply their own Vivecraft/QuestCraft.
+**not bundled or modified** by this mod; players supply their own Vivecraft.
 
 *Not affiliated with Another Axiom or Gorilla Tag. "Gorilla Tag" is referenced only to
 describe the movement style.*
