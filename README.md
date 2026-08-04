@@ -21,7 +21,7 @@ admins cap it) on dedicated servers.
 | Minecraft | 1.21.6 |
 | Loader | Fabric Loader 0.19.3+ |
 | API | Fabric API |
-| VR | Vivecraft (PCVR) for this Minecraft version — Fabric is also the loader QuestCraft (Quest standalone) runs on |
+| VR | Vivecraft (PCVR) — desktop Java only (QuestCraft has no build past MC 1.21.5) |
 | Optional | Mod Menu + Cloth Config — enables the in-game settings screen |
 | Optional | **ViveMonke server mod** — only for **dedicated** servers |
 
@@ -77,7 +77,7 @@ gain an unfair edge.
 
 - Ice is slippery on **every** face: push off ice walls for momentum, but you can't
   cling or climb them.
-- Tunable ice speed multiplier kept low for Quest performance.
+- Tunable ice speed multiplier kept conservative.
 - **Experimental:** make ice *floors* behave like ice *walls* (pure push-off, no glue).
 
 ---
@@ -114,7 +114,7 @@ gain an unfair edge.
 - **Auto-enable on join**, with a short grace window so server rules apply first.
 - **GUI guard**: opening any screen (inventory, chat, settings…) fully suspends
   locomotion so you never drift while in a menu.
-- **Robust teleport handling**: QuestCraft teleports and dimension changes no longer
+- **Robust teleport handling**: server teleports and dimension changes no longer
   leave you stuck, sliding, or wrong-sized.
 - **Barrier blocks are ignored**: admins can fence off areas the mod can't bypass.
 
