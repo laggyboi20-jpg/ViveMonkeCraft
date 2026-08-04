@@ -21,7 +21,7 @@ admins cap it) on dedicated servers.
 | Minecraft | 1.21.5 |
 | Loader | Fabric Loader 0.19.3+ |
 | API | Fabric API |
-| VR | Vivecraft (PCVR) for this Minecraft version — Fabric is also the loader QuestCraft (Quest standalone) runs on |
+| VR | Vivecraft (PCVR), or QuestCraft on Quest standalone — QuestCraft ships this Minecraft version (it supports MC 1.19.2–1.21.5) |
 | Optional | Mod Menu + Cloth Config — enables the in-game settings screen |
 | Optional | **ViveMonke server mod** — only for **dedicated** servers |
 
