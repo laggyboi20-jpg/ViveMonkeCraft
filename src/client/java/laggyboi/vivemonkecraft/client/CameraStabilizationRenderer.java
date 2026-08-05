@@ -52,8 +52,8 @@ public final class CameraStabilizationRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // Horizontal speed drives the effect; vertical weight is halved so
-        // normal gravity falls don't trigger it.
+        // Horizontal speed drives the effect; vertical weight halved so normal falls
+        // don't trigger it.
         Vec3 vel = mc.player.getDeltaMovement();
         double speed = vel.horizontalDistance() + Math.abs(vel.y) * 0.5;
 
