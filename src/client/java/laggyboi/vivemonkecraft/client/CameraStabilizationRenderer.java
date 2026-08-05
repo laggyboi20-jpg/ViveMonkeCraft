@@ -1,40 +1,27 @@
 package laggyboi.vivemonkecraft.client;
 
-import com.mojang.blaze3d.ProjectionType;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 
 // =====================================================================
-// CAMERA STABILIZATION RENDERER  (QuestCraft / Vivecraft 1.2.x)
+// CAMERA STABILIZATION RENDERER  (QuestCraft / Vivecraft)
 // =====================================================================
 //
-// Draws a black vignette border inside the VR headset display to narrow
-// the perceived field-of-view while locomotion is fast. This reduces the
-// peripheral visual-motion signal that contributes to motion sickness.
+// Draws a black vignette border inside the VR headset display to narrow the
+// perceived field-of-view while locomotion is fast, reducing motion sickness.
 //
-// Why WorldRenderEvents.AFTER_TRANSLUCENT:
-//   HudRenderCallback fires during Vivecraft floating GUI panel pass —
-//   its output appears on that panel, not in the VR lens. AFTER_TRANSLUCENT
-//   fires inside the actual scene render, so the vignette ends up in the
-//   headset display.
-//
-// Why clip-space / identity matrices:
-//   The vignette must be head-locked (no world-space parallax). Resetting
-//   both ModelView and Projection to identity maps NDC cords (-1 - +1)
-//   directly to screen edges, independent of the camera. Depth test off so
-//   it draws on top of the scene.
+// ⚠️ 1.21.5 PORT — TEMPORARILY STUBBED ⚠️
+// Minecraft 1.21.5 removed the immediate-mode render path this used
+// (BufferUploader, CoreShaders, RenderSystem.setShader/enableBlend/
+// disableDepthTest/defaultBlendFunc) in favour of the new RenderPipeline /
+// GpuDevice command system. The head-locked vignette needs reimplementing
+// against that API. The speed/easing logic below is preserved and still
+// computes smoothFactor; only the actual GPU draw (drawVignette) is a no-op,
+// so the rest of the mod builds and runs. Re-enable by implementing
+// drawVignette() with a RenderPipeline. (This is the recurring pain file when
+// porting up MC versions — the rest of the mod is render-API-light.)
 // =====================================================================
 
 public final class CameraStabilizationRenderer {
