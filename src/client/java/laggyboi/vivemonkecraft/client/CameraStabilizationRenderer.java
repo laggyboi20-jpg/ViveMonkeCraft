@@ -43,10 +43,6 @@ public final class CameraStabilizationRenderer {
     private static void onWorldRender(WorldRenderContext ctx) {
         if (!VivemonkecraftClient.isEnabled()) return;
         if (!MovementConfig.cameraStabEnabled) return;
-
-        // Gate: only draw when QuestCraft VR is actually active.
-        // VivecraftBridge.isVrActive() uses reflection and never throws;
-        // returns false when QuestCraft is absent or VR is off.
         if (!VivecraftBridge.isVrActive()) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -61,26 +57,18 @@ public final class CameraStabilizationRenderer {
         float rawFactor = (float) Math.max(0.0,
                 Math.min(1.0, (speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)));
 
-        // Ease in fast (snap on within ~2 frames), ease out slowly (~15 frames).
-        // VR runs at ~90 fps; at 0.5 step the vignette appears in 2 frames (~22ms),
-        // and fades over ~15 frames (~170ms) after stopping — long enough not to flicker.
+        // Ease in fast, ease out slowly.
         if (rawFactor > smoothFactor) {
             smoothFactor += (rawFactor - smoothFactor) * 0.5f;
         } else {
             smoothFactor += (rawFactor - smoothFactor) * 0.07f;
         }
-
         if (smoothFactor < 0.01f) return;
 
-        // edgeFrac: fraction of the half-screen (0..1) to cover from each edge.
-        // 0.28 = up to 28% of the view from each edge at max strength.
         float edgeFrac = smoothFactor * strength * 0.28f;
         if (edgeFrac < 0.005f) return;
 
-        // Alpha capped at 230 so the corners are never fully opaque —
-        // you can still orient yourself even at max strength.
-        int alpha = Math.min(230, (int)(230 * smoothFactor * strength));
-
+        int alpha = Math.min(230, (int) (230 * smoothFactor * strength));
         drawVignette(edgeFrac, alpha);
     }
 
